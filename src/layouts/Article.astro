@@ -1,0 +1,147 @@
+---
+import Base from './Base.astro';
+import SeriesNav from '../components/SeriesNav.astro';
+import Newsletter from '../components/Newsletter.astro';
+import { SERIES } from '../content.config';
+import { AUTHOR, LINKS } from '../consts';
+import Contours from '../components/Contours.astro';
+
+interface Item {
+  slug: string;
+  title: string;
+  episode: number;
+}
+interface Props {
+  data: any;
+  slug: string;
+  prev?: Item;
+  next?: Item;
+  readingTime?: number;
+}
+const { data, prev, next, readingTime } = Astro.props;
+const s = SERIES[data.series as keyof typeof SERIES];
+const iso = (d: Date) => d.toISOString().slice(0, 10);
+
+/**
+ * TechArticle schema. This is the tangible SEO capability you own by having
+ * your own site: Substack emits no schema markup at all, which is one of the
+ * concrete reasons not to put the blog there.
+ */
+const schema = {
+  '@context': 'https://schema.org',
+  '@type': 'TechArticle',
+  headline: data.title,
+  description: data.description,
+  datePublished: data.date.toISOString(),
+  ...(data.updated ? { dateModified: data.updated.toISOString() } : {}),
+  author: { '@type': 'Person', name: AUTHOR, url: LINKS.artstation },
+  publisher: { '@type': 'Person', name: AUTHOR },
+  isPartOf: { '@type': 'CreativeWorkSeries', name: s.title },
+  ...(data.cover ? { image: new URL(data.cover, Astro.site).href } : {}),
+  ...(data.tags?.length ? { keywords: data.tags.join(', ') } : {}),
+  inLanguage: data.lang ?? 'en',
+};
+---
+
+<Base
+  title={data.shortTitle ?? data.title}
+  description={data.description}
+  image={data.cover}
+  type="article"
+  published={data.date}
+  modified={data.updated}
+  lang={data.lang}
+  schema={schema}
+>
+  <div class="post-top">
+    <div class="post-art" aria-hidden="true">
+      <Contours seed={data.episode * 31 + 5} lines={26} w={1400} h={420}
+        accent={s.accent as 'rust' | 'moss' | 'ochre'} opacity={0.6} />
+      <span class="post-fade"></span>
+    </div>
+  </div>
+
+  <article class="wrap post">
+    <header class="post-head measure">
+      <p class="kicker">
+        <span class="pill" data-accent={s.accent}>{s.title} #{data.episode}</span>
+        <time datetime={iso(data.date)}>{iso(data.date)}</time>
+        {data.updated && <span class="upd">updated {iso(data.updated)}</span>}
+        {readingTime && <span class="upd">{readingTime} min read</span>}
+      </p>
+      <h1>{data.title}</h1>
+      <p class="standfirst">{data.description}</p>
+
+      {
+        data.versions?.length > 0 && (
+          <p class="versions">
+            <span class="vh">Written against</span>
+            {data.versions.map((v: string) => <code>{v}</code>)}
+          </p>
+        )
+      }
+    </header>
+
+    {
+      data.cover && (
+        <figure class="hero plate">
+          <img src={data.cover} alt={data.coverAlt ?? ''} />
+        </figure>
+      )
+    }
+
+    <div class="prose"><slot /></div>
+
+    <div class="measure">
+      <SeriesNav series={data.series} prev={prev} next={next} />
+      <Newsletter compact />
+    </div>
+  </article>
+</Base>
+
+<style>
+  .post-top { position: relative; height: 190px; margin-bottom: -150px; overflow: hidden; }
+  .post-art { position: absolute; inset: 0; }
+  .post-art :global(svg.contours) { position: absolute; inset: -30% -4% auto; width: 108%; height: 260%; }
+  .post-fade {
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(18,16,12,.42), rgba(18,16,12,.86) 58%, var(--bg));
+  }
+  :root[data-theme='light'] .post-fade {
+    background: linear-gradient(180deg, rgba(245,241,232,.5), rgba(245,241,232,.9) 58%, var(--bg));
+  }
+  .post { position: relative; padding-block: 40px 20px; }
+  .post-head { margin-bottom: 26px; }
+  .kicker {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin: 0 0 14px;
+    flex-wrap: wrap;
+  }
+  .kicker time,
+  .upd {
+    font-size: 12.5px;
+    color: var(--tx-3);
+    font-variant-numeric: tabular-nums;
+  }
+  h1 { margin: 0 0 12px; }
+  .standfirst {
+    font-family: var(--sans);
+    font-style: italic;
+    font-size: 20px;
+    color: var(--tx-2);
+    line-height: 1.5;
+    margin: 0 0 18px;
+  }
+  .versions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 0; }
+  .vh {
+    font: 600 10px/1 var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: var(--tx-3);
+  }
+  .versions code { font-size: 12.5px; }
+  .hero { margin: 0 0 38px; padding: 0; }
+  .hero img { width: 100%; }
+</style>

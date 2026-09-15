@@ -1,0 +1,61 @@
+---
+import { SERIES } from '../content.config';
+interface Item { slug: string; title: string; episode: number }
+interface Props {
+  series: keyof typeof SERIES;
+  prev?: Item;
+  next?: Item;
+}
+const { series, prev, next } = Astro.props;
+const s = SERIES[series];
+---
+<nav class="snav" aria-label={`${s.title} series navigation`}>
+  <p class="sh">
+    <span class="pill" data-accent={s.accent}>{s.title}</span>
+    <span class="tl">{s.tagline}</span>
+  </p>
+  <div class="pair">
+    {prev ? (
+      <a class="lnk" href={`/articles/${prev.slug}/`}>
+        <span class="dir">← Part {prev.episode}</span>
+        <span class="t">{prev.title}</span>
+      </a>
+    ) : <span class="lnk empty">This is part one.</span>}
+
+    {next ? (
+      <a class="lnk right" href={`/articles/${next.slug}/`}>
+        <span class="dir">Part {next.episode} →</span>
+        <span class="t">{next.title}</span>
+      </a>
+    ) : <span class="lnk empty right">Next part in progress.</span>}
+  </div>
+  <p class="all"><a href={`/articles/?series=${series}`}>All parts of {s.title}</a></p>
+</nav>
+
+<style>
+  .snav {
+    margin: 3em 0 0;
+    padding-top: 22px;
+    border-top: 1px solid var(--line);
+  }
+  .sh { display: flex; gap: 11px; align-items: center; margin: 0 0 14px; flex-wrap: wrap; }
+  .tl { font-size: 14px; color: var(--tx-2); }
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 700px) { .pair { grid-template-columns: 1fr; } }
+  .lnk {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 13px 16px;
+    color: var(--tx);
+  }
+  a.lnk:hover { border-color: var(--ac); }
+  .lnk.right { text-align: right; }
+  .lnk.empty { color: var(--tx-3); font-size: 14px; justify-content: center; }
+  .dir { font: 600 10.5px/1 var(--mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--tx-3); }
+  .t { font-size: 15px; line-height: 1.4; }
+  .all { margin: 14px 0 0; font-size: 14px; }
+</style>

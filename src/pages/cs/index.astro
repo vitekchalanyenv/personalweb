@@ -1,0 +1,38 @@
+---
+import Base from '../../layouts/Base.astro';
+import { LINKS } from '../../consts';
+---
+<Base
+  lang="cs"
+  altLangHref="/"
+  altLang="en"
+  title="Vít Chalany — environment art"
+  description="Environment art pro reálnou produkci: modulární kity, vegetace a material systémy v Unreal Engine 5 — s čísly, s tím, co nefungovalo, a se zdrojovými soubory."
+>
+  <section class="wrap hero">
+    <h1>Prostředí, která se posílají do produkce<br /><span class="thin">a čísla, která to dokazují.</span></h1>
+    <p class="lede">
+      Dělám uvěřitelná místa v Unreal Engine 5: evropskou přírodu a historicky
+      věrohodná prostředí. Tři moje modulární kity se prodávají na Fabu, prošly
+      technickým review Epicu a používají se v cizích produkcích. Tady ukazuju
+      přesně jak — s čísly z profileru, s tím, co nefungovalo, a se zdroji.
+    </p>
+    <p class="cta">
+      <a class="btn" href="/articles/">Články (anglicky)</a>
+      <a class="btn ghost" href={LINKS.artstation}>Portfolio na ArtStationu ↗</a>
+    </p>
+    <p class="note">
+      Většina obsahu vychází anglicky, protože tam je publikum. Vybrané díly
+      překládám do češtiny — a když chceš něco probrat česky, napiš mi.
+    </p>
+  </section>
+</Base>
+<style>
+  .hero { padding-block: 62px 40px; max-width: 860px; }
+  h1 { margin: 0 0 18px; font-size: clamp(28px, 5vw, 46px); }
+  h1 .thin { color: var(--tx-3); font-weight: 400; }
+  .lede { font-size: 18px; color: var(--tx-2); max-width: 64ch; margin: 0 0 24px; }
+  .cta { display: flex; gap: 10px; flex-wrap: wrap; margin: 0 0 20px; }
+  .cta a { border-bottom: 0; }
+  .note { font-size: 14px; color: var(--tx-3); max-width: 60ch; }
+</style>

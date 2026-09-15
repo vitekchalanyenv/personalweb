@@ -1,0 +1,77 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description: string;
+  image?: string;
+  type?: 'article' | 'website';
+  published?: Date;
+  modified?: Date;
+  lang?: 'en' | 'cs';
+  altLangHref?: string;
+  altLang?: 'en' | 'cs';
+  schema?: Record<string, unknown>;
+}
+const { lang = 'en', ...head } = Astro.props;
+---
+
+<!doctype html>
+<html lang={lang}>
+  <head>
+    <BaseHead lang={lang} {...head} />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <div class="progress" id="progress" aria-hidden="true"></div>
+    <Header />
+    <main id="main"><slot /></main>
+    <Footer />
+
+    <script is:inline>
+      /* Mark that JS is available BEFORE first paint, so reveal animations can
+         hide their content without ever risking a blank page for no-JS users. */
+      document.documentElement.classList.add('js');
+    </script>
+
+    <script>
+      // ---- scroll reveal -------------------------------------------------
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const items = document.querySelectorAll('[data-reveal]');
+      if (reduce || !('IntersectionObserver' in window)) {
+        items.forEach((el) => el.classList.add('in'));
+      } else {
+        const io = new IntersectionObserver(
+          (entries) => {
+            for (const e of entries) {
+              if (e.isIntersecting) {
+                e.target.classList.add('in');
+                io.unobserve(e.target);
+              }
+            }
+          },
+          { rootMargin: '0px 0px -8% 0px', threshold: 0.06 }
+        );
+        items.forEach((el) => io.observe(el));
+      }
+
+      // ---- reading progress ---------------------------------------------
+      const bar = document.getElementById('progress');
+      if (bar) {
+        let raf = 0;
+        const update = () => {
+          raf = 0;
+          const h = document.documentElement.scrollHeight - window.innerHeight;
+          const p = h > 40 ? Math.min(1, window.scrollY / h) : 0;
+          bar.style.transform = `scaleX(${p})`;
+        };
+        addEventListener('scroll', () => { if (!raf) raf = requestAnimationFrame(update); }, { passive: true });
+        addEventListener('resize', update);
+        update();
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,84 @@
+---
+/**
+ * Icon — a hand-drawn SVG set, in the Field Notes register.
+ *
+ * Deliberately NOT an icon library: 1.5px strokes, square caps, a survey-drawing
+ * feel rather than rounded product-UI icons. Twelve icons is enough for a site
+ * this size, and drawing them here means they inherit currentColor and never
+ * pull in a font or a package.
+ */
+export type IconName =
+  | 'layers'
+  | 'leaf'
+  | 'grid'
+  | 'ruler'
+  | 'terrain'
+  | 'camera'
+  | 'download'
+  | 'arrow'
+  | 'external'
+  | 'gauge'
+  | 'box'
+  | 'mail';
+
+interface Props {
+  name: IconName;
+  size?: number;
+  /** Decorative icons get aria-hidden; give a label if the icon carries meaning. */
+  label?: string;
+  class?: string;
+}
+const { name, size = 20, label, class: cls = '' } = Astro.props;
+
+const P: Record<IconName, string> = {
+  // stacked modular pieces — the kit series
+  layers:
+    'M2 7.5 12 3l10 4.5L12 12 2 7.5Z M2 12.2 12 16.7l10-4.5 M2 16.6 12 21.1l10-4.5',
+  // a leaf with a midrib — vegetation series
+  leaf: 'M4 20C4 11 11 4 20 4c0 9-7 16-16 16Z M4 20 17 7 M9.5 14.5h5 M13 11h4',
+  // tiling / repetition series
+  grid: 'M3 3h7v7H3V3Z M14 3h7v7h-7V3Z M3 14h7v7H3v-7Z M14 14h7v7h-7v-7Z',
+  // texel density / measurement
+  ruler:
+    'M3 15.5 15.5 3l5.5 5.5L8.5 21 3 15.5Z M7 11.5l2 2 M10 8.5l2 2 M13 5.5l2 2',
+  // contour lines — the site motif itself
+  terrain:
+    'M2 17c3.5-4.5 7-1 10.5-4.5S18 6 22 8 M2 12c3.5-4.5 7-1 10.5-4.5 M2 21.5c4.5-2.5 8 .5 11.5-2.5S20 15 22 16',
+  camera:
+    'M3 8.5h3.5L8 6h8l1.5 2.5H21v11H3v-11Z M12 17a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z',
+  download: 'M12 3v12 M7 11l5 5 5-5 M4 21h16',
+  arrow: 'M4 12h15 M13 6l6 6-6 6',
+  external: 'M14 4h6v6 M20 4 11 13 M18 14v6H4V6h6',
+  // profiler / numbers
+  gauge:
+    'M3.5 18a9 9 0 1 1 17 0 M12 13l4.5-4.5 M12 18.2v.01',
+  box: 'M12 2.8 3.5 7.4v9.2L12 21.2l8.5-4.6V7.4L12 2.8Z M3.5 7.4 12 12l8.5-4.6 M12 12v9.2',
+  mail: 'M2.5 5.5h19v13h-19v-13Z M2.5 5.5 12 13l9.5-7.5',
+};
+---
+
+<svg
+  class={`icon ${cls}`}
+  width={size}
+  height={size}
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="1.5"
+  stroke-linecap="square"
+  stroke-linejoin="miter"
+  aria-hidden={label ? undefined : 'true'}
+  role={label ? 'img' : undefined}
+  aria-label={label}
+>
+  {label && <title>{label}</title>}
+  <path d={P[name]} />
+</svg>
+
+<style>
+  .icon {
+    display: inline-block;
+    flex: 0 0 auto;
+    vertical-align: -0.15em;
+  }
+</style>

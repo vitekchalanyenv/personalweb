@@ -1,0 +1,115 @@
+---
+title: 'Texel density'
+description: 'What it is, the standard targets, a calculator, and the conversions you keep having to look up.'
+order: 10
+updated: 2026-08-05
+versions:
+  - 'Engine-agnostic'
+  - 'Examples in Unreal Engine 5.7'
+draft: false
+lang: en
+---
+
+Texel density is how many texture pixels cover a given amount of world space.
+That is all it is. It is also the single most common source of a kit looking
+subtly amateur, because inconsistent density is visible exactly where two
+surfaces meet — and it is very cheap to get right if you decide the number once,
+up front.
+
+<TexelCalculator />
+
+## The formula
+
+```text
+density (px/cm) = texture resolution / surface size in cm
+density (px/m)  = density (px/cm) × 100
+```
+
+A 2048 map on a 200&nbsp;cm surface gives 10.24&nbsp;px/cm, which is
+1024&nbsp;px/m. Industry convention states the per-metre figure, so that surface
+is "1K per metre".
+
+## Standard targets
+
+<div class="table-scroll">
+
+| Target | px/m | px/cm | Use for |
+|---|---:|---:|---|
+| Background | 256 | 2.56 | Distant architecture, terrain, anything the camera never approaches |
+| **Common standard** | **512** | **5.12** | Most game environments. The default answer if you have no reason to pick another |
+| Close-up | 1024 | 10.24 | Hero props, interactive objects, anything within a metre of the camera |
+| Cinematic | 2048 | 20.48 | First-person hands, weapons, cinematic close-ups |
+| Extreme | 4096 | 40.96 | Rarely justified. Usually a sign the surface should be split |
+
+</div>
+
+<Callout kind="key">
+Consistency beats the specific value. A whole kit at 512 reads as professional.
+A kit that averages 512 but mixes 1024 and 256 reads as careless, because your
+eye catches the mismatch at the seam between two pieces even when neither piece
+is wrong on its own.
+</Callout>
+
+## Quick conversions
+
+The table you actually keep coming back for: what surface size a given texture
+covers at each standard density.
+
+<div class="table-scroll">
+
+| Texture | @ 256 px/m | @ 512 px/m | @ 1024 px/m | @ 2048 px/m |
+|---|---:|---:|---:|---:|
+| 256 | 100 cm | 50 cm | 25 cm | 12.5 cm |
+| 512 | 200 cm | 100 cm | 50 cm | 25 cm |
+| 1024 | 400 cm | 200 cm | 100 cm | 50 cm |
+| 2048 | 800 cm | 400 cm | 200 cm | 100 cm |
+| 4096 | 1600 cm | 800 cm | 400 cm | 200 cm |
+| 8192 | 3200 cm | 1600 cm | 800 cm | 400 cm |
+
+</div>
+
+Read it as: at the common 512&nbsp;px/m standard, a 2K map covers a 4-metre
+surface. That one fact answers most day-to-day questions.
+
+## Checking it in Unreal
+
+The engine will tell you rather than making you measure. In the viewport, switch
+to `Optimization Viewmodes → Texture Density`. Green is roughly on target, red is
+over-textured, blue is under.
+
+For a numeric answer on a specific mesh, the checker-texture method is still the
+most reliable: apply a material with a checker pattern at a known scale and count
+squares. Unreal ships one at
+`/Engine/EngineMaterials/DefaultDiffuse` — but a purpose-made checker with
+labelled 10&nbsp;cm squares is worth making once and keeping in your starter
+project forever.
+
+<Callout kind="warn">
+The Texture Density viewmode measures the *material's* density, which is not the
+same as the density of the individual texture if the material scales UVs. If a
+material multiplies UVs by 4, the viewmode reports the effective density
+correctly and your source texture is four times coarser than you might assume
+from the map resolution alone. Check both.
+</Callout>
+
+## When to deliberately break the rule
+
+There are three legitimate reasons, and "this asset felt important" is not one
+of them.
+
+1. **Camera distance genuinely differs.** A skybox building at 256 and a door
+   handle at 1024 in the same scene is correct, not inconsistent, because nothing
+   ever sees both at the same apparent size.
+2. **Trim sheets concentrate detail.** A trim sheet legitimately runs higher
+   density than the large flat surfaces it decorates, because the trim carries the
+   detail and the flats carry the area.
+3. **Tiling rate compensates.** A material that tiles 8× across a wall gets its
+   effective density from the tiling rate, not the map size. Judge the result on
+   screen, not the number in the asset browser.
+
+## Related
+
+- [Trim sheets](/reference/trim-sheets/) — where density concentration is
+  deliberate
+- [Spec before modelling](/articles/shipping-kits-01-spec-before-modelling/) —
+  the document where you commit to one density for a whole kit

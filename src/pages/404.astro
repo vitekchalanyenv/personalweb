@@ -1,0 +1,16 @@
+---
+import Base from '../layouts/Base.astro';
+---
+<Base title="Not found" description="That page does not exist.">
+  <div class="wrap box">
+    <h1>404</h1>
+    <p class="lede">That page does not exist — or it moved and I did not redirect it properly, which is my fault.</p>
+    <p><a class="btn" href="/articles/">Browse the articles</a> <a class="btn ghost" href="/">Home</a></p>
+  </div>
+</Base>
+<style>
+  .box { padding-block: 90px 60px; max-width: 60ch; }
+  h1 { font-size: 64px; margin: 0 0 10px; color: var(--tx-3); }
+  .lede { font-size: 18px; color: var(--tx-2); margin-bottom: 24px; }
+  .box a { border-bottom: 0; }
+</style>

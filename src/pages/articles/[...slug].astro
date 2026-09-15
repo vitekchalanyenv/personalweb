@@ -1,0 +1,55 @@
+---
+import { getCollection, render } from 'astro:content';
+import Article from '../../layouts/Article.astro';
+import { mdxComponents } from '../../components/mdx';
+
+export async function getStaticPaths() {
+  const posts = await getCollection(
+    'articles',
+    ({ data }) => data.lang === 'en' && (!data.draft || import.meta.env.DEV)
+  );
+
+  // Sort within each series by episode so prev/next follow reading order
+  // rather than publication date. If you publish #4 before #3, the series
+  // navigation still reads correctly.
+  const bySeries = new Map<string, typeof posts>();
+  for (const p of posts) {
+    const arr = bySeries.get(p.data.series) ?? [];
+    arr.push(p);
+    bySeries.set(p.data.series, arr);
+  }
+  for (const arr of bySeries.values()) {
+    arr.sort((a, b) => a.data.episode - b.data.episode);
+  }
+
+  return posts.map((post) => {
+    const siblings = bySeries.get(post.data.series)!;
+    const i = siblings.findIndex((p) => p.id === post.id);
+    const toItem = (p: (typeof posts)[number]) => ({
+      slug: p.id,
+      title: p.data.shortTitle ?? p.data.title,
+      episode: p.data.episode,
+    });
+    return {
+      params: { slug: post.id },
+      props: {
+        post,
+        prev: i > 0 ? toItem(siblings[i - 1]) : undefined,
+        next: i < siblings.length - 1 ? toItem(siblings[i + 1]) : undefined,
+      },
+    };
+  });
+}
+
+const { post, prev, next } = Astro.props;
+const { Content } = await render(post);
+
+// Rough reading time. Technical articles read slower than prose, so 180 wpm
+// rather than the usual 225.
+const words = post.body?.split(/\s+/).length ?? 0;
+const readingTime = Math.max(1, Math.round(words / 180));
+---
+
+<Article data={post.data} slug={post.id} prev={prev} next={next} readingTime={readingTime}>
+  <Content components={mdxComponents} />
+</Article>

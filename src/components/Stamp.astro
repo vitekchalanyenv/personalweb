@@ -1,0 +1,64 @@
+---
+/**
+ * Stamp — an archival rubber stamp for the no-AI declaration.
+ *
+ * This exists because the claim is load-bearing for the whole brand, and a line
+ * of small grey text does not carry it. A stamp does. Rotated, slightly ragged
+ * opacity, text on a circular path.
+ */
+interface Props { size?: number; rotate?: number; class?: string }
+const { size = 128, rotate = -8, class: cls = '' } = Astro.props;
+---
+<svg class={`stamp ${cls}`} width={size} height={size} viewBox="0 0 200 200"
+  style={`--rot:${rotate}deg`} role="img" aria-label="No generative AI was used">
+  <title>No generative AI was used</title>
+  <defs>
+    <path id="stamp-arc-top" d="M100,100 m-74,0 a74,74 0 1,1 148,0" fill="none" />
+    <path id="stamp-arc-bot" d="M100,100 m70,0 a70,70 0 1,1 -140,0" fill="none" />
+  </defs>
+
+  <circle cx="100" cy="100" r="92" class="ring outer" />
+  <circle cx="100" cy="100" r="78" class="ring inner" />
+
+  <text class="arc">
+    <textPath href="#stamp-arc-top" startOffset="50%" text-anchor="middle">
+      HAND&#8202;·&#8202;AUTHORED
+    </textPath>
+  </text>
+  <text class="arc small">
+    <textPath href="#stamp-arc-bot" startOffset="50%" text-anchor="middle">
+      NO&#8202;GENERATIVE&#8202;AI
+    </textPath>
+  </text>
+
+  <!-- centre mark: a tiny contour glyph -->
+  <g class="mark">
+    <path d="M62 104c12-7 22-2 32-8s18-9 32-4" />
+    <path d="M62 92c12-7 22-2 32-8s18-9 32-4" opacity=".6" />
+    <path d="M68 116c10-5 18-1 26-5" opacity=".4" />
+  </g>
+  <text class="yr" x="100" y="140" text-anchor="middle">EST. 2026</text>
+</svg>
+<style>
+  .stamp { transform: rotate(var(--rot)); overflow: visible; }
+  .ring { fill: none; stroke: currentColor; }
+  .outer { stroke-width: 3; opacity: .55; }
+  .inner { stroke-width: 1; opacity: .35; }
+  .arc {
+    font-family: var(--mono);
+    font-size: 19px;
+    font-weight: 600;
+    letter-spacing: .22em;
+    fill: currentColor;
+    opacity: .8;
+  }
+  .arc.small { font-size: 16px; letter-spacing: .18em; opacity: .62; }
+  .mark { fill: none; stroke: currentColor; stroke-width: 2.2; opacity: .7; }
+  .yr {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: .2em;
+    fill: currentColor;
+    opacity: .45;
+  }
+</style>

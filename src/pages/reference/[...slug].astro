@@ -1,0 +1,19 @@
+---
+import { getCollection, render } from 'astro:content';
+import ReferenceLayout from '../../layouts/Reference.astro';
+import { mdxComponents } from '../../components/mdx';
+
+export async function getStaticPaths() {
+  const pages = await getCollection(
+    'reference',
+    ({ data }) => data.lang === 'en' && (!data.draft || import.meta.env.DEV)
+  );
+  return pages.map((page) => ({ params: { slug: page.id }, props: { page } }));
+}
+
+const { page } = Astro.props;
+const { Content } = await render(page);
+---
+<ReferenceLayout data={page.data} slug={page.id}>
+  <Content components={mdxComponents} />
+</ReferenceLayout>

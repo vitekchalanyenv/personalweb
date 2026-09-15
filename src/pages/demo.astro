@@ -1,0 +1,288 @@
+---
+import Base from '../layouts/Base.astro';
+import { LINKS } from '../consts';
+import Contours from '../components/Contours.astro';
+import Icon from '../components/Icon.astro';
+import Reveal from '../components/Reveal.astro';
+
+/**
+ * The demo landing page.
+ *
+ * Design rule taken straight from the research: a reviewer spends seconds, and
+ * download-only pages convert at 6% against 37% for something playable in the
+ * browser. So this page has to do two jobs honestly — sell the one thing the
+ * build has that nothing else does (Breakdown Mode), and state the specs so
+ * plainly that nobody downloads it onto hardware that will make the work look
+ * worse than the stills.
+ */
+const RELEASED = false; // flip when the build ships
+
+const scenes = [
+  { name: 'Šumava', art: '/img/art/scene-sumava.webp',
+    what: 'Czech national park. Custom scans, SpeedTree vegetation, seasonal masks.' },
+  { name: 'WW1 Beach Warzone', art: '/img/art/scene-ww1.webp',
+    what: '158 unique meshes. Trenches, defences, a coastline that reads at distance.' },
+  { name: 'Ancient Greek Stadium', art: '/img/art/scene-greek.webp',
+    what: 'Modular Mediterranean kit, classical antiquity.' },
+  { name: 'Rural Cabin', art: '/img/art/scene-cabin.webp',
+    what: '116-mesh modular kit. The trim-sheet showcase.' },
+  { name: 'Border Fortification', art: '/img/art/scene-fort.webp',
+    what: 'Czechoslovak 1930s bunkers swallowed by 90 years of forest.' },
+];
+
+const modeIcon = ['grid', 'layers', 'gauge', 'ruler', 'camera'] as const;
+
+const modes = [
+  ['Wireframe', 'Geometric density, and where the triangles actually went.'],
+  ['LOD colouring', 'Which LOD you are looking at, at the distance you are standing.'],
+  ['Shader complexity', 'The expensive pixels. Usually not the ones you expect.'],
+  ['Lightmap density', 'Where the resolution is, and where I decided it did not need to be.'],
+  ['Unlit', 'Albedo only. The honest test of whether the textures are any good.'],
+];
+---
+
+<Base
+  title="PLACES — an explorable portfolio"
+  description="Five Unreal Engine 5 environments you can walk through, fly around, and take apart. Breakdown Mode peels any scene into wireframe, LODs, shader complexity and lightmap density, with the reasoning attached."
+>
+  <section class="hero-wrap">
+    <div class="hero-art" aria-hidden="true">
+      <Contours seed={91} lines={30} w={1400} h={560} accent="ochre" drift opacity={0.72} />
+      <span class="hero-fade"></span>
+    </div>
+    <div class="wrap hero">
+    <p class="kicker">{RELEASED ? 'Free download · Windows' : 'In production'}</p>
+    <h1>PLACES</h1>
+    <p class="lede">
+      Five environments you can walk through, fly around — and take apart. Most
+      portfolio demos ask you to admire them. This one lets you press a key and
+      see the decisions underneath.
+    </p>
+
+    {
+      RELEASED ? (
+        <p class="cta">
+          <a class="btn" href={LINKS.itch || '#'}>Download on itch.io</a>
+          <a class="btn ghost" href="/articles/">Read the breakdowns</a>
+        </p>
+      ) : (
+        <p class="cta">
+          <a class="btn ghost" href="/articles/">Read the breakdowns while you wait</a>
+        </p>
+      )
+    }
+    </div>
+  </section>
+
+  <section class="wrap band">
+    <div class="feature surface">
+      <p class="fh">The part that does not exist anywhere else</p>
+      <h2>Breakdown Mode</h2>
+      <p class="fl">
+        Press <kbd>F1</kbd>–<kbd>F5</kbd> in any scene and it comes apart. Not a
+        debug menu bolted on — a designed feature, with floating annotations
+        explaining the call I made and what it cost.
+      </p>
+      <ul class="modes">
+        {modes.map(([name, what], i) => (
+          <li>
+            <span class="mkey"><Icon name={modeIcon[i]} size={16} /> F{i + 1}</span>
+            <span><strong>{name}</strong> — {what}</span>
+          </li>
+        ))}
+      </ul>
+      <p class="tiny">
+        The pattern is proven — UNIGINE's Heaven benchmark has shipped wireframe
+        and tessellation toggles to ordinary users for over a decade. It has just
+        never been done in an art portfolio.
+      </p>
+    </div>
+  </section>
+
+  <section class="wrap band">
+    <p class="seclabel"><span class="n">02</span> Five places</p>
+    <div class="grid g3 scenes">
+      {scenes.map((s, i) => (
+        <article class="card lift scene">
+          <span class="plate zoom">
+            <img src={s.art} alt="" loading="lazy" decoding="async" />
+            <span class="idx">{String(i + 1).padStart(2, '0')}</span>
+          </span>
+          <span class="sbody">
+            <h3>{s.name}</h3>
+            <p>{s.what}</p>
+          </span>
+        </article>
+      ))}
+    </div>
+  </section>
+
+  <section class="wrap band">
+    <p class="seclabel"><span class="n">03</span> Also in there</p>
+    <div class="grid g2">
+      <div class="card">
+        <h3>Photo mode</h3>
+        <p class="small">
+          Free camera, depth of field, aperture, hidden UI, high-resolution
+          capture. Compose your own shot — if you shoot something you like, I
+          would genuinely like to see it.
+        </p>
+      </div>
+      <div class="card">
+        <h3>Three ways to move</h3>
+        <p class="small">
+          A scripted cinematic pass if you just want to look, free flight if you
+          want to inspect, and walking if you want to judge the scale. Scene
+          select is on the title screen — you never have to hunt for anything.
+        </p>
+      </div>
+      <div class="card">
+        <h3>Time of day</h3>
+        <p class="small">
+          A slider, not a fixed golden hour. Environments that only work at one
+          sun angle are not finished, and this is the honest way to show that.
+        </p>
+      </div>
+      <div class="card">
+        <h3>Scalability presets</h3>
+        <p class="small">
+          Down to a low preset that still composes properly. If it runs badly on
+          your machine that is my problem, not yours.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap band">
+    <div class="card specs">
+      <p class="seclabel"><span class="n">04</span> Specs — please read before downloading</p>
+      <dl>
+        <div><dt>Platform</dt><dd>Windows 10 / 11, x64, DirectX 12</dd></div>
+        <div><dt>Download</dt><dd>{RELEASED ? 'TBD GB' : 'TBD'}</dd></div>
+        <div><dt>Recommended</dt><dd>TBD — stated honestly once measured</dd></div>
+        <div><dt>Minimum</dt><dd>TBD — with a low preset that still looks composed</dd></div>
+        <div><dt>Signed</dt><dd>Yes — no SmartScreen warning</dd></div>
+        <div><dt>Installer</dt><dd>None. Unzip and run.</dd></div>
+      </dl>
+      <p class="tiny">
+        I will publish the actual measured frame rate on named hardware rather
+        than a vague "recommended spec". Downloading eight gigabytes to get
+        fifteen frames a second leaves you with a worse impression of the work
+        than the stills would have.
+      </p>
+    </div>
+  </section>
+
+  <section class="wrap band">
+    <p class="ai tiny">
+      No generative AI was used at any stage of these environments, including
+      reference gathering. Everything is either hand-authored or captured
+      photogrammetry, and third-party licensed assets are disclosed in each
+      scene's written breakdown.
+    </p>
+  </section>
+</Base>
+
+<style>
+  .hero-wrap { position: relative; overflow: hidden; border-bottom: 1px solid var(--line); isolation: isolate; }
+  .hero-art { position: absolute; inset: 0; z-index: -1; }
+  .hero-art :global(svg.contours) { position: absolute; inset: -10% -4%; width: 108%; height: 120%; }
+  .hero-fade {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(110% 95% at 20% 0%, rgba(18,16,12,0) 4%, rgba(18,16,12,0.88) 66%),
+      linear-gradient(180deg, rgba(18,16,12,.3), rgba(18,16,12,.08) 40%, var(--bg));
+  }
+  :root[data-theme='light'] .hero-fade {
+    background:
+      radial-gradient(110% 95% at 20% 0%, rgba(245,241,232,.15) 4%, rgba(245,241,232,.93) 66%),
+      linear-gradient(180deg, rgba(245,241,232,.5), rgba(245,241,232,.3) 40%, var(--bg));
+  }
+  .hero { padding-block: 66px 46px; max-width: 800px; }
+  .kicker {
+    font: 600 10.5px/1 var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.11em;
+    color: var(--ac);
+    margin: 0 0 14px;
+  }
+  h1 { margin: 0 0 16px; font-size: clamp(40px, 8vw, 76px); letter-spacing: -0.03em; }
+  .lede { font-size: 19px; color: var(--tx-2); margin: 0 0 26px; }
+  .cta { display: flex; gap: 10px; flex-wrap: wrap; margin: 0; }
+  .cta a { border-bottom: 0; }
+
+  .band { padding-block: 26px; }
+  .sh {
+    font: 600 10.5px/1 var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.11em;
+    color: var(--tx-3);
+    margin: 0 0 16px;
+  }
+
+  .feature { border-left: 3px solid var(--ac); padding: 24px 26px; }
+  .fh {
+    margin: 0 0 8px;
+    font: 600 10.5px/1 var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ac);
+  }
+  .feature h2 { margin: 0 0 10px; font-size: 27px; }
+  .fl { font-size: 17px; color: var(--tx-2); margin: 0 0 16px; max-width: 62ch; }
+  kbd {
+    font: 600 12.5px var(--mono);
+    background: var(--bg-3);
+    border: 1px solid var(--line);
+    border-bottom-width: 2px;
+    border-radius: 5px;
+    padding: 2px 6px;
+    color: var(--tx);
+  }
+  .modes { margin: 0 0 14px; padding-left: 1.2em; font-size: 15px; color: var(--tx-2); }
+  .modes li { margin-bottom: 5px; }
+  .modes strong { color: var(--tx); }
+
+  .scenes { align-items: stretch; }
+  .scene { padding: 0; overflow: hidden; display: flex; flex-direction: column; }
+  .scene .plate { display: block; aspect-ratio: 3 / 2; border-radius: 0; position: relative; }
+  .scene .plate img { height: 100%; object-fit: cover; }
+  .scene .idx {
+    position: absolute; top: 10px; left: 12px;
+    font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: .1em;
+    color: var(--tx); background: rgba(10,8,5,.6);
+    border: 1px solid rgba(233,227,214,.16); border-radius: 3px; padding: 3px 7px;
+    backdrop-filter: blur(3px);
+  }
+  .sbody { padding: 16px 18px 18px; }
+  .scene h3 { margin: 0 0 6px; font-size: 18px; }
+  .scene p { margin: 0; font-size: 14px; color: var(--tx-2); line-height: 1.55; }
+  .card h3 { margin-top: 0; }
+  .mkey {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--mono); font-size: 10.5px; font-weight: 600;
+    letter-spacing: .09em; color: var(--ac);
+    border: 1px solid var(--line); background: var(--bg-3);
+    border-radius: 3px; padding: 3px 7px; flex: 0 0 auto; margin-right: 10px;
+  }
+  .modes li { display: flex; align-items: flex-start; gap: 0; }
+
+  .specs { padding: 22px 26px; }
+  .specs dl {
+    margin: 0 0 14px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  @media (max-width: 760px) { .specs dl { grid-template-columns: 1fr 1fr; } }
+  .specs dt {
+    font: 600 10px/1 var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--tx-3);
+    margin-bottom: 5px;
+  }
+  .specs dd { margin: 0; font-size: 15.5px; color: var(--tx); }
+
+  .ai { max-width: 70ch; }
+</style>

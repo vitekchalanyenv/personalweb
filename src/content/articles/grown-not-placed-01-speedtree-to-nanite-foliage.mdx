@@ -1,0 +1,219 @@
+---
+title: 'SpeedTree to Nanite foliage: the whole chain, with the numbers'
+shortTitle: 'SpeedTree to Nanite foliage'
+description: >-
+  There is almost no free, current, written resource for getting a SpeedTree
+  asset into UE5 as Nanite foliage that actually performs. Here is the entire
+  chain — export settings, the masked-to-opaque decision, wind, and what each
+  step costs.
+series: grown-not-placed
+episode: 1
+date: 2026-09-09
+cover: /img/grown-not-placed-01/cover.webp
+coverAlt: A Central European deciduous forest in Unreal Engine 5 with Nanite foliage
+tags:
+  - speedtree
+  - foliage
+  - nanite
+  - optimisation
+  - vegetation
+versions:
+  - 'Unreal Engine 5.7'
+  - 'SpeedTree for Games 9'
+draft: false
+lang: en
+---
+
+If you search for how to get SpeedTree vegetation into Unreal 5 as Nanite
+foliage, you will find a handful of paid courses, two or three YouTube videos,
+and a pirated copy of one of the courses. What you will not find is a free,
+current, written account of the whole chain with numbers attached.
+
+That is a strange gap, because this is not a niche problem — it is the core
+technical question for anyone doing natural environments, and the answer changed
+substantially with Nanite foliage support. So this is that account. It is written
+against **UE 5.7** and **SpeedTree for Games 9**, and every number in it was
+measured on the same forest scene.
+
+<SpecTable
+  title="Test scene"
+  rows={[
+    ['Subject', 'Central European deciduous forest, mixed beech and spruce'],
+    ['Area', '400 × 400 m'],
+    ['Foliage instances', '~412 000'],
+    ['Unique tree assets', '6 species, 3 age variants each'],
+    ['Hardware', 'RTX 3070, 1080p, Epic scalability'],
+    ['Measurement', '`stat unit`, `stat gpu`, averaged over 300 frames on a fixed camera path'],
+  ]}
+/>
+
+## The decision that dominates everything else
+
+Before any export settings: **masked or opaque?**
+
+Traditional game foliage uses alpha-masked cards — a quad with a leaf texture and
+an opacity mask. It is cheap in triangles and it has been the standard for twenty
+years. Nanite changes the arithmetic, because Nanite does not love masked
+materials. Masked geometry forces a separate pass, defeats some of Nanite's
+rasterisation advantages, and interacts badly with Lumen, where every masked
+surface is additional work for the ray tracer.
+
+The alternative is **modelled leaves**: actual geometry per leaf cluster, opaque
+material, no opacity mask at all. Twenty years ago that was absurd. With Nanite
+it is often *faster*, because Nanite's whole premise is that triangle count
+stops being the thing you budget.
+
+<Callout kind="key">
+The counterintuitive result: for Nanite foliage, **more triangles and no alpha
+mask frequently beats fewer triangles with a mask.** Nanite is good at geometry
+and bad at masks. Build to its strengths rather than porting a 2005 pipeline
+into it.
+</Callout>
+
+Here is what that swap actually did on the test scene.
+
+<Numbers
+  label="Same forest, masked cards versus modelled opaque leaves"
+  beforeLabel="Masked cards"
+  afterLabel="Opaque geometry"
+  rows={[
+    ['Frame time', '24.1 ms', '16.8 ms', 'better'],
+    ['Triangles rendered', '18.4 M', '61.2 M', 'worse'],
+    ['Base pass GPU', '6.2 ms', '3.1 ms', 'better'],
+    ['Lumen scene lighting', '5.9 ms', '3.4 ms', 'better'],
+    ['Virtual shadow maps', '4.8 ms', '2.9 ms', 'better'],
+    ['Disk size, all species', '340 MB', '710 MB', 'worse'],
+  ]}
+  note="Triangle count went up 3.3×. Frame time went **down** 30%. This is the whole argument for opaque Nanite foliage in one table — you trade disk and memory, which are cheap, for GPU passes, which are not. Measured with `stat gpu`."
+/>
+
+The cost is real: disk size roughly doubles, and the SpeedTree work is more
+involved because you are modelling leaf clusters rather than mapping cards. But
+frame time is what ships a scene, and the shadow and Lumen savings compound with
+every additional light.
+
+<Callout kind="warn">
+This result is scene-dependent and I want to be honest about the boundary. It
+holds for **dense, close-range vegetation with dynamic lighting**. For distant
+background trees, sparse scatter, or a baked-lighting project, masked cards can
+still win. Measure your own scene — do not take my forest as universal.
+</Callout>
+
+## The export chain, step by step
+
+### 1. In SpeedTree
+
+<div class="table-scroll">
+
+| Setting | Value | Why |
+|---|---|---|
+| Leaf geometry | Modelled clusters, not single cards | The point of the whole exercise |
+| Mesh LODs | Generate 1 low LOD only | Nanite handles the rest. You need one cheap LOD as a fallback and for the billboard transition |
+| Wind | Enabled, exported to vertex colours | See the wind section below |
+| Vertex colours | **Do not overwrite** | UE reads wind data from these channels — this is the single most common way to break wind on import |
+| Scale | Centimetres | Match Unreal or you will rescale 18 assets by hand |
+| Pivot | Base of trunk, centred | So foliage scatter and physics behave |
+
+</div>
+
+### 2. On import into Unreal
+
+Enable Nanite on the trunk and branch meshes immediately. For the leaf clusters,
+enable Nanite **and** set the material to `Opaque` — if it is still `Masked` you
+have not actually made the swap and you will get the worst of both approaches.
+
+Then the setting almost everyone misses:
+
+<Callout kind="warn">
+**Preserve Area** on the Nanite settings. Off by default. With it off, Nanite's
+simplification collapses thin leaf geometry into slivers at distance and your
+canopy visibly thins out as the camera pulls back. Turn it on for anything with
+thin features. It costs a little in cluster efficiency and saves the entire
+silhouette of your tree.
+</Callout>
+
+### 3. Wind that does not look like jelly
+
+Wind is where good foliage becomes convincing and where most foliage becomes
+faintly ridiculous. The problem is almost always that everything moves *together*
+— one global sine wave, and the forest breathes in unison like a single organism.
+
+The fix is per-instance phase offset. Three layers, each at a different frequency:
+
+<NodeGraph
+  src="/img/grown-not-placed-01/wind-graph.webp"
+  alt="Unreal material graph layering three wind frequencies with a per-instance random phase offset"
+  caption="Three-layer wind with per-instance phase. The PerInstanceRandom node is the entire difference between a forest and a jelly."
+  engine="Unreal Engine 5.7"
+  nodes={[
+    ['PerInstanceRandom', 'a stable 0–1 value per foliage instance — this is what desynchronises the forest'],
+    ['Multiply', 'scale that random into a phase offset in radians'],
+    ['Time', 'scaled three times, at roughly 0.4, 1.6 and 5.0 — trunk sway, branch bend, leaf flutter'],
+    ['Sine', 'one per frequency layer, each with the per-instance phase added'],
+    ['Add', 'sum the three layers, weighted heavily toward the slowest'],
+    ['VertexColor', 'the SpeedTree wind weights — R for trunk, G for branch, B for leaf — masking each layer to the right part of the tree'],
+    ['WorldPositionOffset', 'the final displacement'],
+  ]}
+/>
+
+Weight the layers **heavily toward the slowest**. My defaults are roughly
+`0.6 / 0.3 / 0.1` for trunk, branch and leaf. Trees are mostly still; it is the
+occasional slow lean that reads as wind, not constant fluttering.
+
+## Where the frames actually go
+
+The single most useful thing I can give you is not a settings list, it is the
+order in which to look for problems. From the same test scene, ranked by how
+much a bad decision costs you:
+
+<div class="table-scroll">
+
+| Cost | Usually caused by | First thing to check |
+|---|---|---|
+| **Virtual shadow maps** | Every foliage instance casting a full dynamic shadow | Disable shadow casting on small ground foliage. It is almost never visible and it is expensive |
+| **Lumen scene lighting** | Masked materials, and too much foliage in the Lumen scene | The masked-to-opaque swap; then `r.Lumen.Scene.SurfaceCache` resolution |
+| **Overdraw** | Layered translucent or masked cards | `Shader Complexity` view mode. Bright red canopies are the culprit |
+| **Base pass** | Genuinely too many unique materials | Consolidate to one master material with instances |
+| **Triangle count** | Rarely the actual problem with Nanite | Check this last, not first |
+
+</div>
+
+That ordering is the opposite of most people's instinct. Triangle count is the
+thing artists worry about and, with Nanite, the thing that matters least. Shadow
+casting on grass is the thing nobody thinks about and it can cost several
+milliseconds.
+
+<Numbers
+  label="Two settings changes, same scene, no visual difference at gameplay distance"
+  beforeLabel="Defaults"
+  afterLabel="Tuned"
+  rows={[
+    ['Frame time', '16.8 ms', '11.9 ms', 'better'],
+    ['Virtual shadow maps', '2.9 ms', '1.1 ms', 'better'],
+    ['Ground foliage casting shadows', 'yes', 'no', 'better'],
+    ['Foliage instances', '412 000', '412 000', 'same'],
+  ]}
+  note="Turning off shadow casting on grass and low ground cover, and capping the foliage cull distance for the smallest species. Zero visible change from a standing camera. `stat gpu` again."
+/>
+
+Five milliseconds for two checkboxes.
+
+## What I still have not solved
+
+Two honest gaps, because a guide that claims to have everything solved is
+usually lying:
+
+- **Seasonal variation from one asset.** I have a working mask-and-LUT approach
+  that handles green to autumn convincingly. Winter — bare branches with snow
+  load — genuinely needs different geometry, and I have not found a way around
+  that which does not look wrong. That is a later part in this series, when I
+  have something worth publishing rather than a workaround.
+- **Billboard transition at extreme distance.** The pop is reduced but not gone.
+  It is currently the weakest part of my forest and I would rather say so than
+  pretend the cull distance solves it.
+
+## Next
+
+Part two takes the masked-to-opaque decision apart properly: exactly when the
+swap loses, how to measure it on your own scene rather than trusting my forest,
+and what happens to your memory budget at the scale where it starts to hurt.

@@ -1,0 +1,25 @@
+---
+interface Props {
+  src: string;
+  alt: string;
+  caption?: string;
+  /** Let a hero image break out of the text measure. */
+  wide?: boolean;
+}
+const { src, alt, caption, wide = false } = Astro.props;
+---
+<figure class={wide ? 'fig wide' : 'fig'}>
+  <img src={src} alt={alt} loading="lazy" decoding="async" />
+  {caption && <figcaption>{caption}</figcaption>}
+</figure>
+<style>
+  .fig { margin: 2em 0; padding: 0; }
+  .fig img {
+    width: 100%;
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    background: var(--bg-2);
+  }
+  .fig.wide { max-width: min(1040px, 92vw); margin-inline: calc(50% - min(520px, 46vw)); }
+  figcaption { font-size: 14px; color: var(--tx-2); margin-top: 10px; line-height: 1.5; }
+</style>

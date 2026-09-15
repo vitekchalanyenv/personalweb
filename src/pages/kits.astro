@@ -1,0 +1,125 @@
+---
+import Base from '../layouts/Base.astro';
+import { LINKS } from '../consts';
+
+/**
+ * Edit this array as you ship kits. Keeping it here rather than in a CMS is
+ * deliberate — it is three to six items that change a few times a year.
+ *
+ * `breakdown` should point at the article that explains the kit. That link is
+ * the whole reason this page exists: it turns a storefront into evidence.
+ */
+const kits = [
+  {
+    name: 'Rural Modular Cabin Environment',
+    meshes: 116,
+    lods: '3–4',
+    textures: '1K / 2K / 4K',
+    engine: 'UE5',
+    fab: 'https://www.fab.com/sellers/VitChalany',
+    breakdown: '/articles/shipping-kits-01-spec-before-modelling/',
+    note:
+      'Modular timber construction, trim-sheet driven. The kit the Shipping Kits series uses as its worked example.',
+  },
+  {
+    name: 'Ancient Greek Stadium — Mediterranean Modular',
+    meshes: 113,
+    lods: '3–4',
+    textures: '1K / 2K / 4K',
+    engine: 'UE5',
+    fab: 'https://www.fab.com/sellers/VitChalany',
+    breakdown: '',
+    note: 'Ships with a downloadable demo level. Classical antiquity is a genuinely thin shelf on Fab.',
+  },
+  {
+    name: 'Fantasy Modular Combat Arena',
+    meshes: 20,
+    lods: 'Nanite',
+    textures: '1K / 2K / 4K, 64 maps',
+    engine: 'UE5',
+    fab: 'https://www.fab.com/sellers/VitChalany',
+    breakdown: '',
+    note: 'Small kit. Best used as a free funnel product rather than a paid tier — see the series.',
+  },
+];
+---
+<Base
+  title="Kits"
+  description="Commercial modular environment kits for Unreal Engine 5 — mesh counts, LOD strategy, texture budgets, and the technical breakdown behind each one."
+>
+  <div class="wrap top">
+    <h1>Kits</h1>
+    <p class="lede">
+      Commercial modular environment kits, all through Epic's technical and
+      content review and in use in third-party productions. Every one has a
+      written breakdown, because a store listing tells you what is in the box and
+      a breakdown tells you whether the person who built it knew what they were
+      doing.
+    </p>
+    <p class="cta"><a class="btn" href={LINKS.fab}>All kits on Fab ↗</a></p>
+  </div>
+
+  <div class="wrap list">
+    {kits.map((k) => (
+      <section class="kit card">
+        <div class="kh">
+          <h2>{k.name}</h2>
+          <p class="note">{k.note}</p>
+        </div>
+        <dl>
+          <div><dt>Unique meshes</dt><dd>{k.meshes}</dd></div>
+          <div><dt>LODs</dt><dd>{k.lods}</dd></div>
+          <div><dt>Textures</dt><dd>{k.textures}</dd></div>
+          <div><dt>Engine</dt><dd>{k.engine}</dd></div>
+        </dl>
+        <p class="links">
+          <a href={k.fab}>Get it on Fab ↗</a>
+          {k.breakdown && <> · <a href={k.breakdown}>Read the breakdown</a></>}
+        </p>
+      </section>
+    ))}
+  </div>
+
+  <div class="wrap">
+    <aside class="card lic">
+      <h3>Licensing, plainly</h3>
+      <p class="small">
+        Everything is sold under the Fab Standard License in both Personal and
+        Professional tiers. You can put these assets in a commercial project and
+        ship it. You cannot redistribute the assets themselves as a standalone
+        pack. If you are a studio and need something the standard licence does
+        not cover, email me.
+      </p>
+      <p class="small">
+        All assets are hand-authored. No generative AI at any stage, and AI
+        training on these assets is not permitted.
+      </p>
+    </aside>
+  </div>
+</Base>
+
+<style>
+  .top { padding-block: 44px 6px; }
+  h1 { margin: 0 0 12px; }
+  .lede { max-width: 66ch; color: var(--tx-2); font-size: 18px; margin: 0 0 20px; }
+  .cta a { border-bottom: 0; }
+  .list { padding-block: 22px; display: grid; gap: 14px; }
+  .kit { padding: 20px 22px; }
+  .kh h2 { margin: 0 0 6px; font-size: 21px; }
+  .note { margin: 0 0 16px; color: var(--tx-2); font-size: 15px; max-width: 70ch; }
+  dl {
+    margin: 0 0 14px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--line);
+  }
+  @media (max-width: 700px) { dl { grid-template-columns: 1fr 1fr; } }
+  dt { font: 600 10px/1 var(--mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--tx-3); margin-bottom: 5px; }
+  dd { margin: 0; font-size: 17px; font-weight: 650; color: var(--tx); }
+  .links { margin: 0; font-size: 14.5px; }
+  .lic { margin-top: 14px; }
+  .lic h3 { margin: 0 0 8px; font-size: 17px; }
+  .lic p:last-child { margin-bottom: 0; }
+</style>

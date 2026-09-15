@@ -1,0 +1,125 @@
+---
+/**
+ * Numbers — the moat.
+ *
+ * Research finding this serves directly: page 1 for "Nanite optimization" and
+ * similar queries is occupied by generic "complete guide" content farms. The
+ * only thing that beats them is real profiler output — stat commands, draw
+ * calls, texel density, before/after frame times — because a farm cannot
+ * fabricate a number it never measured.
+ *
+ * So: every technical article gets one of these. If you can't fill it in, the
+ * article probably isn't finished.
+ *
+ * Usage:
+ *   <Numbers
+ *     label="Forest scene, RTX 3070 @ 1080p, Epic scalability"
+ *     rows={[
+ *       ['Frame time', '18.4 ms', '11.2 ms', 'better'],
+ *       ['Draw calls', '4 210', '1 870', 'better'],
+ *       ['Foliage instances', '412 000', '412 000', 'same'],
+ *       ['Texture memory', '1.9 GB', '2.1 GB', 'worse'],
+ *     ]}
+ *     beforeLabel="Naive"
+ *     afterLabel="After the pass"
+ *     note="Measured with `stat unit` and `stat rhi` averaged over 300 frames from a fixed camera path."
+ *   />
+ */
+type Dir = 'better' | 'worse' | 'same';
+
+interface Props {
+  label: string;
+  /** [metric, before, after, direction] */
+  rows: [string, string, string, Dir?][];
+  beforeLabel?: string;
+  afterLabel?: string;
+  note?: string;
+}
+const {
+  label,
+  rows,
+  beforeLabel = 'Before',
+  afterLabel = 'After',
+  note,
+} = Astro.props;
+---
+
+<div class="numbers">
+  <div class="hd">
+    <span class="tagline">Measured</span>
+    <span class="lbl">{label}</span>
+  </div>
+
+  <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>Metric</th>
+          <th class="num">{beforeLabel}</th>
+          <th class="num">{afterLabel}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          rows.map(([metric, before, after, dir = 'same']) => (
+            <tr>
+              <td><strong>{metric}</strong></td>
+              <td class="num">{before}</td>
+              <td class="num" data-dir={dir}>{after}</td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
+
+  {note && <p class="note" set:html={note.replace(/`([^`]+)`/g, '<code>$1</code>')} />}
+</div>
+
+<style>
+  .numbers {
+    position: relative;
+    margin: 2em 0;
+    background:
+      linear-gradient(180deg, rgba(255,246,230,.028), rgba(255,246,230,0) 46%),
+      var(--bg-2);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--ac);
+    border-radius: var(--r);
+    padding: 16px 20px 6px;
+    box-shadow:
+      0 1px 0 rgba(255,246,230,.045) inset,
+      0 10px 30px -18px rgba(0,0,0,.7);
+  }
+  /* direction markers: a small arrow glyph, drawn with borders */
+  td[data-dir='better']::after,
+  td[data-dir='worse']::after {
+    content: '';
+    display: inline-block;
+    width: 0; height: 0;
+    margin-left: 7px;
+    border: 4px solid transparent;
+    vertical-align: 1px;
+  }
+  td[data-dir='better']::after { border-bottom-color: var(--ok); border-top-width: 0; }
+  td[data-dir='worse']::after { border-top-color: var(--warn); border-bottom-width: 0; }
+  .hd { margin-bottom: 12px; }
+  .tagline {
+    display: inline-block;
+    font: 600 10.5px/1 var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ac);
+    margin-right: 10px;
+  }
+  .lbl { font-size: 14px; color: var(--tx-2); }
+  .numbers table { margin-bottom: 8px; }
+  td[data-dir='better'] { color: var(--ok); font-weight: 650; }
+  td[data-dir='worse'] { color: var(--warn); font-weight: 650; }
+  .note {
+    font-size: 13.5px;
+    color: var(--tx-2);
+    margin: 0 0 12px;
+    line-height: 1.55;
+  }
+</style>

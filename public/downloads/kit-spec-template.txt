@@ -1,0 +1,47 @@
+KIT SPEC — one page, written BEFORE you open anything.
+Fill it in, delete what does not apply, keep OPEN QUESTIONS honest.
+
+KIT: <name>
+TARGET: <engine version, renderer features you rely on>
+THEME: <one sentence — what a buyer would actually search for>
+
+GRID
+  base module              <cm>
+  sub-modules              <cm>
+  vertical module          <cm>
+  grid owner               <corners | walls>   <- decide this in writing
+  pivot convention         <...>
+  snaps on default grid?   <yes/no>            <- say this in the store listing
+
+TEXEL DENSITY
+  target                   <px/m>
+  exceptions               <which pieces, and why>
+
+TRIM SHEETS
+  sheet 1                  <material family>  <resolution>
+  sheet 2                  <material family>  <resolution>
+  drawn layout             <link to the sketch — draw it before authoring>
+
+ASSET LIST  (sort by how often a piece appears, not by type)
+  structural (20+ uses)    <count>   trim only, tightest polycount
+  character  (3-8 uses)    <count>   trim + small unique atlas
+  hero       (1-2 uses)    <count>   unique set, generous budget
+
+BUDGETS
+  triangle ceiling, structural piece   <n>
+  LOD count                            <n>
+  collision                            <simple | per-piece | hull>
+  total texture memory target          <MB>
+
+DELIVERABLE
+  formats                  <UE, FBX, glTF...>   <- more formats = higher Fab
+                                                  Limited-Time Free payout tier
+  demo level?              <yes/no>
+  documentation            <what the buyer actually gets>
+
+OPEN QUESTIONS
+  <everything you are tempted to hand-wave goes here, visibly.
+   Resolve each one before it becomes a refit.>
+
+---
+From the Shipping Kits series: vitchalany.pages.dev/articles/

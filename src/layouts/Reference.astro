@@ -1,0 +1,121 @@
+---
+import Base from './Base.astro';
+import Newsletter from '../components/Newsletter.astro';
+import { getCollection } from 'astro:content';
+
+interface Props {
+  data: any;
+  slug: string;
+}
+const { data, slug } = Astro.props;
+const all = (
+  await getCollection('reference', ({ data }) => !data.draft || import.meta.env.DEV)
+).sort((a, b) => a.data.order - b.data.order);
+const iso = (d: Date) => d.toISOString().slice(0, 10);
+---
+
+<Base title={data.title} description={data.description} lang={data.lang}>
+  <div class="wrap ref">
+    <aside class="side" aria-label="Reference index">
+      <p class="sh">Reference</p>
+      <ul>
+        {
+          all.map((r) => (
+            <li>
+              <a href={`/reference/${r.id}/`} aria-current={r.id === slug ? 'page' : undefined}>
+                {r.data.title}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+      <p class="note">
+        Structured, current, and kept up to date. If something here is wrong for
+        your engine version, tell me and I will fix it.
+      </p>
+    </aside>
+
+    <article>
+      <header class="rh">
+        <p class="kicker">Reference · updated {iso(data.updated)}</p>
+        <h1>{data.title}</h1>
+        <p class="standfirst">{data.description}</p>
+        {
+          data.versions?.length > 0 && (
+            <p class="versions">
+              <span class="vh">Current for</span>
+              {data.versions.map((v: string) => <code>{v}</code>)}
+            </p>
+          )
+        }
+      </header>
+      <div class="prose"><slot /></div>
+      <Newsletter compact />
+    </article>
+  </div>
+</Base>
+
+<style>
+  .ref {
+    display: grid;
+    grid-template-columns: 232px minmax(0, 1fr);
+    gap: 44px;
+    padding-block: 40px 20px;
+    align-items: start;
+  }
+  @media (max-width: 900px) {
+    .ref { grid-template-columns: 1fr; gap: 26px; }
+    .side { position: static; }
+  }
+  .side { position: sticky; top: 84px; }
+  .sh {
+    font: 600 10.5px/1 var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--tx-3);
+    margin: 0 0 12px;
+  }
+  .side ul { list-style: none; margin: 0 0 18px; padding: 0; }
+  .side li { margin-bottom: 2px; }
+  .side a {
+    display: block;
+    border: 0;
+    padding: 6px 10px;
+    border-radius: 7px;
+    font-size: 14.5px;
+    color: var(--tx-2);
+  }
+  .side a:hover { background: var(--bg-3); color: var(--tx); }
+  .side a[aria-current='page'] {
+    color: var(--ac);
+    font-weight: 600;
+    background: var(--bg-3);
+  }
+  .note { font-size: 12.5px; color: var(--tx-3); line-height: 1.55; }
+  .rh { margin-bottom: 24px; }
+  .kicker {
+    font: 600 10.5px/1 var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: var(--tx-3);
+    margin: 0 0 12px;
+  }
+  h1 { margin: 0 0 10px; }
+  .standfirst {
+    font-family: var(--sans);
+    font-style: italic;
+    font-size: 19px;
+    color: var(--tx-2);
+    line-height: 1.5;
+    margin: 0 0 14px;
+    max-width: 60ch;
+  }
+  .versions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 0; }
+  .vh {
+    font: 600 10px/1 var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: var(--tx-3);
+  }
+  .versions code { font-size: 12.5px; }
+</style>

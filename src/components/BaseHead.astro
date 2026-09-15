@@ -1,0 +1,95 @@
+---
+import { SITE_TITLE, SITE_DESC, AUTHOR } from '../consts';
+
+interface Props {
+  title: string;
+  description: string;
+  /** Absolute or root-relative OG image. */
+  image?: string;
+  /** 'article' for posts, 'website' for everything else. */
+  type?: 'article' | 'website';
+  published?: Date;
+  modified?: Date;
+  lang?: 'en' | 'cs';
+  /** Root-relative path of the translated version, if one exists. */
+  altLangHref?: string;
+  altLang?: 'en' | 'cs';
+  /** Extra JSON-LD to inject (Article schema, HowTo, etc.). */
+  schema?: Record<string, unknown>;
+}
+
+const {
+  title,
+  description,
+  image = '/img/og-default.png',
+  type = 'website',
+  published,
+  modified,
+  lang = 'en',
+  altLangHref,
+  altLang,
+  schema,
+} = Astro.props;
+
+const canonical = new URL(Astro.url.pathname, Astro.site).href;
+const ogImage = new URL(image, Astro.site).href;
+const fullTitle = title === SITE_TITLE ? title : `${title} · ${SITE_TITLE}`;
+---
+
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="generator" content={Astro.generator} />
+
+<title>{fullTitle}</title>
+<meta name="description" content={description} />
+<link rel="canonical" href={canonical} />
+
+<link rel="alternate" hreflang={lang} href={canonical} />
+{
+  altLangHref && altLang && (
+    <link rel="alternate" hreflang={altLang} href={new URL(altLangHref, Astro.site).href} />
+  )
+}
+{altLangHref && <link rel="alternate" hreflang="x-default" href={new URL(lang === 'en' ? Astro.url.pathname : altLangHref, Astro.site).href} />}
+
+<meta property="og:type" content={type} />
+<meta property="og:title" content={title} />
+<meta property="og:description" content={description} />
+<meta property="og:url" content={canonical} />
+<meta property="og:image" content={ogImage} />
+<meta property="og:site_name" content={SITE_TITLE} />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content={title} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={ogImage} />
+{published && <meta property="article:published_time" content={published.toISOString()} />}
+{modified && <meta property="article:modified_time" content={modified.toISOString()} />}
+{type === 'article' && <meta property="article:author" content={AUTHOR} />}
+
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="alternate" type="application/rss+xml" title={SITE_TITLE} href="/rss.xml" />
+<meta name="theme-color" content="#0d0f14" />
+
+<!--
+  Schema.org. This is the concrete thing Substack cannot give you: no schema
+  markup, no heading control. It is why the site is worth owning.
+-->
+{
+  schema && (
+    <script type="application/ld+json" is:inline set:html={JSON.stringify(schema)} />
+  )
+}
+
+<!-- Set the theme before first paint so there is no flash of the wrong mode. -->
+<script is:inline>
+  (() => {
+    try {
+      const saved = localStorage.getItem('theme');
+      const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+      const theme = saved || (prefersLight ? 'light' : 'dark');
+      if (theme === 'light') document.documentElement.setAttribute('data-theme', 'light');
+    } catch (e) {
+      /* localStorage blocked — dark default is fine */
+    }
+  })();
+</script>

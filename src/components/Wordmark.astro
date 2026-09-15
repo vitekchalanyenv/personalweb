@@ -1,0 +1,30 @@
+---
+/**
+ * Wordmark — VC monogram inside a survey bracket, with a contour tick.
+ * Drawn, not typeset, so it holds at 22px in a header and at 400px on a card.
+ */
+interface Props { size?: number; showName?: boolean; class?: string }
+const { size = 34, showName = false, class: cls = '' } = Astro.props;
+---
+<span class={`wm ${cls}`}>
+  <svg width={size} height={size} viewBox="0 0 40 40" fill="none" aria-hidden="true">
+    <!-- survey bracket: open corners, not a closed box -->
+    <path d="M3 11V3h8 M29 3h8v8 M37 29v8h-8 M11 37H3v-8"
+      stroke="currentColor" stroke-width="1.6" opacity=".45" />
+    <!-- V -->
+    <path d="M10 12.5 17 27.5 24 12.5" stroke="var(--wm-ac,#c77b45)" stroke-width="2.4"
+      stroke-linecap="square" />
+    <!-- C, a partial arc so it reads as a contour, not a letter in a circle -->
+    <path d="M32 15.4a6.4 6.4 0 1 0 0 9.2" stroke="currentColor" stroke-width="2.2"
+      stroke-linecap="square" />
+    <!-- elevation tick -->
+    <path d="M9 32.5c4-2.2 7-.6 10-2.4" stroke="var(--wm-ac,#c77b45)" stroke-width="1.1"
+      opacity=".8" />
+  </svg>
+  {showName && <span class="nm">Vít Chalany</span>}
+</span>
+<style>
+  .wm { display: inline-flex; align-items: center; gap: 11px; color: var(--tx); }
+  .wm svg { display: block; flex: 0 0 auto; }
+  .nm { font-family: var(--sans); font-size: 19px; letter-spacing: 0.005em; }
+</style>

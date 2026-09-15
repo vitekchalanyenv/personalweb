@@ -1,0 +1,235 @@
+---
+title: 'Spec before modelling: the document that saves you three weeks'
+shortTitle: 'Spec before modelling'
+description: >-
+  Every modular kit I have shipped that went badly went badly for the same
+  reason: I opened Blender before I knew what the modules were. Here is the
+  one-page document I now write first, and the four decisions it forces.
+series: shipping-kits
+episode: 1
+date: 2026-08-12
+cover: /img/shipping-kits-01/cover.webp
+coverAlt: A modular cabin kit laid out on a grid against a plain background, with module dimensions annotated
+tags:
+  - modular
+  - trim sheets
+  - production
+  - fab
+versions:
+  - 'Unreal Engine 5.7'
+  - 'Substance 3D Designer 14'
+draft: false
+lang: en
+---
+
+I have shipped three commercial modular environment kits. Two of them went
+smoothly. One of them took roughly three weeks longer than it should have, and
+I can point at the exact reason: I started modelling before I could answer the
+question *"how many times does this piece appear in a scene?"*
+
+That question sounds trivial. It is not. It determines the polycount you can
+afford, whether the piece gets a unique texture or shares a trim sheet, whether
+it snaps to a grid, and — the expensive one — whether it needs to work at three
+different scales or one. Answer it wrong on a 116-mesh kit and you find out at
+the point where fixing it means redoing UVs on forty assets.
+
+So now I write a spec first. It is one page. It takes an afternoon. It is the
+single highest-leverage hour in the whole project.
+
+<Callout kind="key">
+A kit is not a collection of props. It is a **system with a contract**: pieces
+that fit each other, at stated dimensions, with a stated texture budget. The
+spec is where you write that contract down — before you can still change it
+cheaply.
+</Callout>
+
+## Why "just start blocking out" fails specifically for kits
+
+Blocking out and iterating is genuinely good advice for a *scene*. A scene has
+one camera, one composition, one lighting setup, and you find the answers by
+looking. A kit has none of those things. It has an unknown buyer building an
+unknown scene, and your job is to make every reasonable arrangement work.
+
+The failure mode is subtle. Everything looks fine while you are building the
+first fifteen pieces, because you are unconsciously arranging them the way you
+imagined them. The trouble arrives when you try the twentieth arrangement — the
+one your buyer will try — and discover that your wall pieces only line up if
+the corner goes on the left.
+
+This is the part where I should say what actually happened to me.
+
+<Callout kind="wrong">
+On the cabin kit I authored the wall segments first, at what felt like a
+natural length, and derived the corner pieces from them afterwards. The corners
+ended up needing a 6&nbsp;cm overlap to hide a seam. Which was fine — until I
+built an L-shaped floor plan and the overlap put the roof beam 6&nbsp;cm off the
+wall it was supposed to sit on. Every roof piece inherited the error. I refit
+eleven meshes.
+
+The fix was not a modelling fix. It was that I never decided, in writing,
+whether the corner or the wall owned the grid.
+</Callout>
+
+## The spec, in four decisions
+
+Not a template to fill in mechanically — four questions that each rule out a
+lot of downstream work.
+
+### 1. What is the module length, and what owns the grid?
+
+Pick one base length and derive everything from it. I use **200&nbsp;cm** for
+building kits, because it divides cleanly into a 100&nbsp;cm sub-module and sits
+comfortably against Unreal's default 100&nbsp;cm grid, so a buyer can snap
+pieces without changing their editor settings.
+
+Then decide, explicitly, **which piece owns the origin**. My rule now: corners
+own the grid, walls fill between them. Corners are the pieces with two
+constraints, so they get to be right and the walls absorb the tolerance.
+
+<SpecTable
+  title="Cabin kit — grid contract"
+  rows={[
+    ['Base module', '200 cm'],
+    ['Sub-module', '100 cm (half), 50 cm (filler)'],
+    ['Vertical module', '280 cm floor-to-floor'],
+    ['Grid owner', 'Corner pieces. Walls fill between.'],
+    ['Pivot convention', 'Bottom-centre for verticals, bottom-corner for floors'],
+    ['Snapping', 'Works on default 100 cm UE grid, no editor changes needed'],
+  ]}
+/>
+
+That last row is worth stating in your store listing, not just your spec. "Snaps
+on the default grid" removes a real objection for a buyer who has been burned
+by a kit built on 137&nbsp;cm modules.
+
+### 2. How many times does each piece appear?
+
+Sort every planned asset into three buckets. This one table decides your whole
+texture budget.
+
+<div class="table-scroll">
+
+| Frequency | Appears | Texture strategy | Polycount |
+|---|---|---|---|
+| **Structural** | 20+ times per scene | Shared trim sheet, no unique maps | Tightest — this is where triangles multiply |
+| **Character** | 3–8 times | Trim sheet plus a small unique atlas | Moderate |
+| **Hero** | Once, maybe twice | Unique texture set, worth the memory | Generous |
+
+</div>
+
+The mistake — and it is the most common mistake in kits generally — is treating
+every prop as a hero prop. If a piece appears twenty times, a unique 2K map for
+it is twenty times the memory for one instance of visual interest. Put that
+budget into the one piece the camera actually stops on.
+
+### 3. What goes on the trim sheet, and what does not?
+
+Once you know the frequency buckets, the trim sheet almost writes itself: every
+structural piece has to live on it. The decision that remains is *how many
+trims*, and the honest answer is fewer than you want.
+
+My working rule is **one trim sheet per material family**, not per asset type.
+The cabin kit has two: painted timber, and stone-and-mortar. Metal fittings share
+the timber sheet because there are only four of them and they are small.
+
+A trim sheet plan is a drawing, not a list. Draw the sheet at the start, with
+the strips labelled and the UV space allocated, before you author a single
+texel. If the strips do not fit, you have too many, and finding that out on
+paper costs ten minutes instead of two days.
+
+### 4. What is the texel density, and is it the same for everything?
+
+One number, written down, applied to the whole set. I use **512&nbsp;px/m** for
+kits like this, which is the common game standard and holds up until the camera
+is closer than about a metre.
+
+Consistency matters more than the value. A kit where every piece is 512 reads as
+professional; a kit where some pieces are 1024 and some are 256 reads as
+careless even if the average is fine, because the mismatch is visible exactly
+where two pieces meet.
+
+If you are not sure what number your surface sizes imply, the
+[texel density reference page](/reference/texel-density/) has a calculator that
+will tell you in about four seconds.
+
+## What the spec is not
+
+It is not a design document and it should not be pretty. Mine is a single page
+of plain text and one hand-drawn trim sheet layout. Nobody else reads it. Its
+whole job is to force the four decisions above into an explicit form so that
+when I am eleven assets deep and tempted to fudge something, there is a written
+answer to argue with.
+
+It is also **not immutable**. Change it when you learn something — but change
+the document, not just the model. The document being stale is how you end up
+with two conventions in one kit.
+
+<Callout kind="warn">
+The version to watch out for is a spec written *after* you started modelling, to
+describe what you already did. That is documentation, which is useful, but it is
+not a spec and it will not save you three weeks. The value is entirely in the
+decisions being made while they are still cheap.
+</Callout>
+
+## The one-page template
+
+Here is the actual shape of mine, stripped to headings. Copy it, delete what
+does not apply, and fill it in before you open anything.
+
+```text
+KIT: <name>
+TARGET: <engine version, renderer features you rely on>
+THEME: <one sentence — what a buyer would search for>
+
+GRID
+  base module          <cm>
+  sub-modules          <cm>
+  vertical module      <cm>
+  grid owner           <corners | walls>
+  pivot convention     <...>
+  snaps on default grid?  <yes/no>
+
+TEXEL DENSITY
+  target               <px/m>
+  exceptions           <which pieces, and why>
+
+TRIM SHEETS
+  sheet 1              <material family>  <resolution>
+  sheet 2              <material family>  <resolution>
+  drawn layout         <link to the sketch>
+
+ASSET LIST
+  structural (20+ uses)    <count>   trim only
+  character  (3-8 uses)    <count>   trim + small atlas
+  hero       (1-2 uses)    <count>   unique set
+
+BUDGETS
+  triangle ceiling, structural piece   <n>
+  LOD count                            <n>
+  collision                            <simple / per-piece / hull>
+  total texture memory target           <MB>
+
+DELIVERABLE
+  formats              <UE, FBX, glTF...>
+  demo level?          <yes/no>
+  documentation        <what the buyer gets>
+
+OPEN QUESTIONS
+  <the things you genuinely do not know yet — keep this list honest>
+```
+
+That `OPEN QUESTIONS` section is the most useful part. Everything you are
+tempted to hand-wave goes there, visibly, and you resolve it before it becomes
+a refit.
+
+<Download
+  label="The spec template as a plain text file"
+  href="/downloads/kit-spec-template.txt"
+  note="No signup needed for this one — it is nine lines of headings and you could retype it from the article. If you want the rest of the series when it lands, the form below does that."
+/>
+
+## Next
+
+Part two goes deeper on the single decision that caused my three-week refit:
+grid discipline. Which pieces must sit on the grid, which must not, and how to
+tell the difference before you find out the expensive way.

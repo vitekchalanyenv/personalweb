@@ -1,0 +1,31 @@
+---
+/**
+ * Reveal — scroll-triggered entrance, once per element.
+ *
+ * Wrapping rather than a global script so the markup states its intent. Content
+ * is visible by default and only hidden once JS confirms it can animate, so it
+ * can never leave the page blank.
+ */
+interface Props { delay?: number; class?: string }
+const { delay = 0, class: cls = '' } = Astro.props;
+---
+<div class={`rv ${cls}`} data-reveal style={delay ? `--rv-delay:${delay}ms` : undefined}>
+  <slot />
+</div>
+<style>
+  .rv { --rv-delay: 0ms; }
+  :global(html.js) .rv[data-reveal] {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+  :global(html.js) .rv.in {
+    opacity: 1;
+    transform: none;
+    transition:
+      opacity .62s cubic-bezier(.2, .7, .3, 1) var(--rv-delay),
+      transform .62s cubic-bezier(.2, .7, .3, 1) var(--rv-delay);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    :global(html.js) .rv[data-reveal] { opacity: 1; transform: none; }
+  }
+</style>

@@ -1,0 +1,299 @@
+---
+import Base from '../layouts/Base.astro';
+import ArticleCard from '../components/ArticleCard.astro';
+import Newsletter from '../components/Newsletter.astro';
+import Contours from '../components/Contours.astro';
+import Reveal from '../components/Reveal.astro';
+import { getCollection } from 'astro:content';
+import { SERIES } from '../content.config';
+import { SITE_DESC, LINKS } from '../consts';
+
+const posts = (
+  await getCollection(
+    'articles',
+    ({ data }) => data.lang === 'en' && (!data.draft || import.meta.env.DEV)
+  )
+).sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+
+const latest = posts.slice(0, 3);
+const seriesEntries = Object.entries(SERIES) as [
+  keyof typeof SERIES,
+  (typeof SERIES)[keyof typeof SERIES],
+][];
+
+const facts = [
+  ['3', 'kits shipped on Fab'],
+  ['345', 'unique meshes authored'],
+  ['512', 'px/m held across every set'],
+  ['0', 'generative AI, at any stage'],
+];
+---
+
+<Base title="Vít Chalany" description={SITE_DESC}>
+  <!-- ============ HERO ============ -->
+  <section class="hero">
+    <div class="hero-bg" aria-hidden="true">
+      <Contours seed={17} lines={16} w={1400} h={560} drift opacity={0.5} />
+      <span class="hero-glow"></span>
+      <span class="hero-veil"></span>
+    </div>
+
+    <div class="wrap hero-in">
+      <p class="eyebrow"><span class="dot"></span> Environment artist · Czech Republic</p>
+
+      <h1>Believable places,<br />built to ship.</h1>
+
+      <p class="lede">
+        European nature and grounded historical environments in Unreal Engine 5.
+        Three modular kits on sale through Epic's marketplace, in use in other
+        people's productions — and everything I learned making them, written
+        down with the numbers attached.
+      </p>
+
+      <div class="cta">
+        <a class="btn" href="/articles/">Read the series</a>
+        <a class="btn ghost" href={LINKS.artstation}>See the portfolio</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FACTS ============ -->
+  <section class="wrap">
+    <ul class="facts">
+      {
+        facts.map(([n, l]) => (
+          <li>
+            <span class="fn">{n}</span>
+            <span class="fl">{l}</span>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+
+  <!-- ============ SERIES ============ -->
+  <section class="wrap band">
+    <Reveal>
+      <header class="shead">
+        <h2>Three running series</h2>
+        <p>Each one numbered, open-ended, and about a problem I actually had.</p>
+      </header>
+
+      <div class="series">
+        {
+          seriesEntries.map(([key, meta], i) => {
+            const n = posts.filter((p) => p.data.series === key).length;
+            return (
+              <a class="srow" href={`/articles/#${key}`}>
+                <span class="sn">{String(i + 1).padStart(2, '0')}</span>
+                <span class="sm">
+                  <span class="stitle">{meta.title}</span>
+                  <span class="stag">{meta.tagline}</span>
+                </span>
+                <span class="sb">{meta.blurb}</span>
+                <span class="scount">{n === 0 ? 'soon' : `${n} part${n === 1 ? '' : 's'}`}</span>
+              </a>
+            );
+          })
+        }
+      </div>
+    </Reveal>
+  </section>
+
+  <!-- ============ LATEST ============ -->
+  {
+    latest.length > 0 && (
+      <section class="wrap band">
+        <Reveal>
+          <header class="shead">
+            <h2>Latest</h2>
+            <a class="more" href="/articles/">All articles →</a>
+          </header>
+          <div class="grid g3 latest">
+            {latest.map((p) => (
+              <ArticleCard
+                slug={p.id}
+                title={p.data.shortTitle ?? p.data.title}
+                description={p.data.description}
+                series={p.data.series}
+                episode={p.data.episode}
+                date={p.data.date}
+                cover={p.data.cover}
+                coverAlt={p.data.coverAlt}
+              />
+            ))}
+          </div>
+        </Reveal>
+      </section>
+    )
+  }
+
+  <!-- ============ METHOD ============ -->
+  <section class="wrap band">
+    <Reveal>
+      <div class="method">
+        <div class="mleft">
+          <h2>Everything here<br />has been measured.</h2>
+          <p>
+            Every article states the engine version, shows the node graph with
+            the node names as readable text, includes profiler numbers before
+            and after, and says what I tried that did not work.
+          </p>
+        </div>
+        <ul class="mlist">
+          <li><b>Real numbers</b><span>Profiler output, not adjectives.</span></li>
+          <li><b>Stated versions</b><span>Because "it depends" is not an answer.</span></li>
+          <li><b>Source files</b><span>Commented graphs, not screenshots.</span></li>
+          <li><b>Failure modes</b><span>When the technique loses, and to what.</span></li>
+        </ul>
+      </div>
+    </Reveal>
+  </section>
+
+  <!-- ============ ELSEWHERE ============ -->
+  <section class="wrap band">
+    <Reveal>
+      <div class="grid g2">
+        <a class="card lift big" href="/reference/">
+          <h3>Reference</h3>
+          <p>
+            Texel density with a working calculator, trim sheet standards,
+            modular grid conventions. Tables to bookmark, not essays to read
+            once.
+          </p>
+          <span class="go">Open reference →</span>
+        </a>
+        <a class="card lift big" href="/kits/">
+          <h3>Kits</h3>
+          <p>
+            Three commercial modular environment kits, 113–116 unique meshes
+            each, with the technical decisions behind them written up.
+          </p>
+          <span class="go">See the kits →</span>
+        </a>
+      </div>
+    </Reveal>
+  </section>
+
+  <div class="wrap band" style="padding-top:0"><Reveal><Newsletter /></Reveal></div>
+</Base>
+
+<style>
+  /* ---------- hero ---------- */
+  .hero { position: relative; overflow: hidden; isolation: isolate; }
+  .hero-bg { position: absolute; inset: 0; z-index: -1; }
+  .hero-bg :global(svg.contours) {
+    position: absolute; inset: -14% -4%; width: 108%; height: 128%;
+  }
+  .hero-glow {
+    position: absolute;
+    width: 70vw; height: 46vw;
+    top: -24vw; left: 50%;
+    transform: translateX(-50%);
+    background: radial-gradient(ellipse at center, var(--ac-dim), transparent 62%);
+    filter: blur(40px);
+  }
+  .hero-veil {
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, transparent 40%, var(--bg) 96%);
+  }
+  .hero-in {
+    padding-block: clamp(72px, 12vw, 140px) clamp(48px, 7vw, 84px);
+    max-width: 880px;
+  }
+  .hero h1 { margin: 0 0 26px; }
+  .lede {
+    font-size: clamp(17px, 1.9vw, 20px);
+    line-height: 1.62;
+    color: var(--tx-2);
+    max-width: 56ch;
+    margin: 0 0 36px;
+  }
+  .cta { display: flex; gap: 12px; flex-wrap: wrap; }
+
+  /* ---------- facts ---------- */
+  .facts {
+    list-style: none; margin: 0; padding: 34px 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 28px;
+  }
+  @media (max-width: 820px) { .facts { grid-template-columns: 1fr 1fr; gap: 26px; } }
+  .facts li { display: flex; flex-direction: column; gap: 8px; }
+  .fn {
+    font-size: clamp(30px, 3.6vw, 42px);
+    font-weight: 500;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    color: var(--tx);
+    font-variant-numeric: tabular-nums;
+  }
+  .fl { font-size: 14px; color: var(--tx-3); line-height: 1.45; max-width: 22ch; }
+
+  /* ---------- section headers ---------- */
+  .shead {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 24px; flex-wrap: wrap; margin-bottom: 44px;
+  }
+  .shead h2 { margin: 0; }
+  .shead p { margin: 0; color: var(--tx-2); font-size: 16px; max-width: 46ch; }
+  .more { font-size: 14.5px; color: var(--tx-2); white-space: nowrap; }
+  .more:hover { color: var(--ac); }
+
+  /* ---------- series: rows, not boxes ---------- */
+  .series { border-top: 1px solid var(--line); }
+  .srow {
+    display: grid;
+    grid-template-columns: 46px minmax(190px, 1fr) minmax(0, 1.5fr) 76px;
+    gap: 28px;
+    align-items: baseline;
+    padding: 30px 8px 30px 0;
+    border-bottom: 1px solid var(--line);
+    color: var(--tx);
+    transition: padding-left .3s cubic-bezier(.22,.7,.28,1), background-color .24s ease;
+  }
+  .srow:hover { padding-left: 12px; background: var(--bg-1); }
+  @media (max-width: 900px) {
+    .srow { grid-template-columns: 34px 1fr; gap: 6px 18px; padding-block: 24px; }
+    .srow .sb, .srow .scount { grid-column: 2; }
+    .scount { text-align: left; }
+  }
+  .sn { font-family: var(--mono); font-size: 12px; color: var(--tx-3); }
+  .sm { display: flex; flex-direction: column; gap: 5px; }
+  .stitle {
+    font-size: 21px; font-weight: 540; letter-spacing: -0.022em;
+    transition: color .18s ease;
+  }
+  .srow:hover .stitle { color: var(--ac); }
+  .stag { font-size: 14px; color: var(--tx-3); }
+  .sb { font-size: 15px; color: var(--tx-2); line-height: 1.62; }
+  .scount {
+    font-family: var(--mono); font-size: 11.5px; color: var(--tx-3);
+    text-align: right; white-space: nowrap;
+  }
+
+  .latest { gap: 40px 28px; }
+
+  /* ---------- method ---------- */
+  .method {
+    display: grid; grid-template-columns: 1fr 1fr; gap: clamp(32px, 6vw, 80px);
+    padding-block: 8px;
+  }
+  @media (max-width: 900px) { .method { grid-template-columns: 1fr; gap: 34px; } }
+  .mleft h2 { margin: 0 0 18px; }
+  .mleft p { color: var(--tx-2); margin: 0; max-width: 42ch; }
+  .mlist { list-style: none; margin: 0; padding: 0; }
+  .mlist li {
+    display: flex; flex-direction: column; gap: 5px;
+    padding: 20px 0; border-bottom: 1px solid var(--line);
+  }
+  .mlist li:first-child { padding-top: 0; }
+  .mlist b { font-weight: 540; font-size: 16px; letter-spacing: -0.014em; }
+  .mlist span { color: var(--tx-2); font-size: 15px; }
+
+  /* ---------- big cards ---------- */
+  .big { display: flex; flex-direction: column; padding: 34px; color: var(--tx); }
+  .big h3 { margin: 0 0 12px; font-size: 24px; }
+  .big p { margin: 0 0 24px; color: var(--tx-2); font-size: 15.5px; }
+  .go { margin-top: auto; font-size: 14.5px; color: var(--ac); }
+</style>

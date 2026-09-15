@@ -1,0 +1,171 @@
+---
+title: 'Why your wall looks tiled — and the four-node fix that buys you the most'
+shortTitle: 'Why your wall looks tiled'
+description: >-
+  Visible repetition is not a texture-resolution problem, it is a
+  spatial-frequency problem. Once you can name what your eye is catching, the
+  cheapest fix is four nodes and about ten minutes.
+series: breaking-the-tile
+episode: 1
+date: 2026-08-26
+cover: /img/breaking-the-tile-01/cover.webp
+coverAlt: A stone wall shown twice, once with obvious repeating tiles and once broken up with macro variation
+tags:
+  - materials
+  - tiling
+  - substance designer
+  - unreal engine
+versions:
+  - 'Unreal Engine 5.7'
+  - 'Substance 3D Designer 14'
+draft: false
+lang: en
+---
+
+Everybody knows a tiled texture when they see one. Very few people can say
+*what* they are seeing, which is why the usual response — go get a bigger
+texture — does not work and costs memory to fail.
+
+Here is the useful framing. Your eye is not detecting the texture. It is
+detecting a **regular spatial frequency**: some feature repeating at an exact
+interval. A bigger texture moves that interval further apart. It does not remove
+it. Walk backwards and the repetition comes right back, now at a scale that
+covers half your screen.
+
+So the whole discipline of breaking tiling is: **add variation at frequencies
+your tile does not contain**, especially frequencies much lower than the tile
+itself.
+
+<Callout kind="key">
+Repetition reads as repetition when the eye can find the period. Fixing it means
+adding information at a *different* period — usually much larger than one tile —
+not adding more information inside the tile.
+</Callout>
+
+## Name what you are seeing first
+
+Before touching a graph, work out which of these you have. They have different
+fixes and people routinely apply the wrong one.
+
+<div class="table-scroll">
+
+| What you see | The actual cause | What fixes it |
+|---|---|---|
+| **A visible grid** | Value differences at the tile edge | Macro variation (this article) |
+| **The same blemish everywhere** | A high-contrast unique feature inside the tile | Remove it from the tile; add it back as a decal |
+| **Regular lighting bands** | Normal or roughness repeating, not albedo | Break roughness separately from albedo |
+| **Obvious seams at UV edges** | The texture is not actually tileable | Fix the source texture — no shader saves this |
+| **Repetition only at distance** | Mip levels converging to a flat average | Distance-based blend, later in this series |
+
+</div>
+
+The first row is the one you have about eighty per cent of the time, and it is
+the one with the cheapest fix by a wide margin.
+
+## The four-node fix
+
+Macro variation. One extra texture, sampled at a much larger scale than the base,
+multiplied over the top, and then blended back so it does not turn to mud.
+
+<NodeGraph
+  src="/img/breaking-the-tile-01/macro-variation-graph.webp"
+  alt="Unreal material graph showing a base texture sample multiplied by a large-scale noise sample and blended back with a Lerp"
+  caption="The entire setup. Four nodes and one parameter you will actually tune."
+  engine="Unreal Engine 5.7"
+  nodes={[
+    ['TextureSample', 'the tiling base, UVs scaled to your normal tiling rate'],
+    ['TextureSample', 'a soft greyscale noise, UVs scaled 0.02–0.06× the base — this is the whole trick'],
+    ['Multiply', 'base RGB against the noise, giving you dark and light regions'],
+    ['LinearInterpolate', 'blend from the untouched base toward the multiplied version, driven by a scalar parameter so you can dial the strength in an instance'],
+  ]}
+/>
+
+The number that matters is that second UV scale. If your base tiles at 8× across
+a surface, the macro noise wants to be somewhere around **0.25×** — roughly one
+thirtieth of the base frequency. Get it wrong in the obvious direction and you
+have just added a second visible tile.
+
+<BeforeAfter
+  before="/img/breaking-the-tile-01/before.webp"
+  after="/img/breaking-the-tile-01/after.webp"
+  alt="Stone wall with and without macro variation"
+  beforeLabel="Straight 8× tile"
+  afterLabel="With macro variation"
+  caption="Same texture, same lighting, same mesh. The only difference is a 0.25× noise multiply blended at 0.35 strength."
+/>
+
+### The parameter values I actually ship
+
+<div class="table-scroll">
+
+| Parameter | My default | Range worth trying |
+|---|---|---|
+| Macro UV scale | `0.03` of base tiling | `0.015`–`0.06` |
+| Blend strength | `0.35` | `0.2`–`0.5` |
+| Noise contrast | Soft — no hard edges | — |
+| Applied to | Albedo, and roughness at half strength | — |
+
+</div>
+
+That last row is the one people skip and it is the difference between "less
+tiled" and "not tiled". If you only break the albedo, the specular response
+still repeats at the original period, and in any scene with a moving light your
+eye locks straight onto it. Feed the same noise into roughness at about half the
+strength.
+
+<Callout kind="wrong">
+My first version of this drove the noise into the normal map too. Do not. It
+looks fine in the material preview and then reads as a lumpy, inflated surface
+in the scene, because you are effectively adding low-frequency geometry that the
+lighting has to justify and the silhouette contradicts. Albedo and roughness
+only.
+</Callout>
+
+## What it costs
+
+The reason to reach for this first is not that it is the most powerful technique
+in the series. It is that it is nearly free, so it is the correct default on
+every tiling material you author.
+
+<Numbers
+  label="Single 4×4 m wall panel, RTX 3070 @ 1080p, Epic scalability"
+  beforeLabel="Base material"
+  afterLabel="With macro variation"
+  rows={[
+    ['Instructions (base pass)', '112', '121', 'worse'],
+    ['Texture samples', '3', '4', 'worse'],
+    ['Additional texture memory', '—', '~0.7 MB shared', 'worse'],
+    ['GPU time, material eval', 'baseline', '+0.4%', 'worse'],
+    ['Visible tiling at 10 m', 'obvious', 'gone', 'better'],
+  ]}
+  note="Measured with `stat gpu` and the material stats panel, averaged over 300 frames from a fixed camera. The noise texture is a single 512 greyscale shared across every material in the set — which is why the memory cost rounds to nothing at scene scale."
+/>
+
+Nine instructions and one shared 512 map. That is the whole bill.
+
+<Callout kind="warn">
+Share the noise texture across your entire material library. One 512 greyscale
+referenced by forty materials costs 0.7&nbsp;MB once. Forty bespoke noise maps
+cost forty times that and look no better, and this is a genuinely common way for
+a kit's memory budget to quietly double.
+</Callout>
+
+## When this is not the answer
+
+Macro variation fixes value repetition. It does not fix:
+
+- **Shape repetition.** If your texture contains one distinctive crack and that
+  crack appears every two metres, no amount of tonal variation hides it. Take the
+  feature out of the tile and reintroduce it as a decal where you want it.
+- **Genuine seams.** If the source texture does not tile, fix the source
+  texture. A shader cannot invent the pixels that would have matched.
+- **Distance convergence.** Once mips flatten the surface to an average colour,
+  macro variation flattens with it. That needs a distance-based blend, which is
+  part four.
+
+## Next
+
+Part two is cell bombing — the technique people reach for first and should
+usually reach for third, because it is genuinely powerful and genuinely
+expensive. I will show what it costs in real numbers and when that price is
+worth paying.

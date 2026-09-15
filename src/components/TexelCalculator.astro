@@ -1,0 +1,191 @@
+---
+/**
+ * TexelCalculator — the reason the reference section exists.
+ *
+ * Research finding: the best-known texel density resource in environment art
+ * currently ranks on Google as a raw PDF served off a Webflow CDN. No HTML,
+ * no headings, no internal links, not interactive. That is a wide-open flank,
+ * and an interactive calculator with a proper article around it takes it.
+ *
+ * Zero dependencies, no build step, works with the page's own theme.
+ */
+---
+
+<div class="calc" data-calc>
+  <p class="calc-h">Texel density calculator</p>
+
+  <div class="fields">
+    <div class="f">
+      <label for="td-tex">Texture resolution</label>
+      <select id="td-tex" data-tex>
+        <option value="256">256</option>
+        <option value="512">512</option>
+        <option value="1024">1024</option>
+        <option value="2048" selected>2048</option>
+        <option value="4096">4096</option>
+        <option value="8192">8192</option>
+      </select>
+    </div>
+
+    <div class="f">
+      <label for="td-size">Surface size <span class="u">(cm)</span></label>
+      <input id="td-size" type="number" data-size value="200" min="0.1" step="1" />
+    </div>
+
+    <div class="f">
+      <label for="td-target">Target density</label>
+      <select id="td-target" data-target>
+        <option value="2.56">2.56 — 256 px/m · background, terrain</option>
+        <option value="5.12" selected>5.12 — 512 px/m · common game standard</option>
+        <option value="10.24">10.24 — 1024 px/m · hero props, close-up</option>
+        <option value="20.48">20.48 — 2048 px/m · first-person hands, cinematics</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="out">
+    <div class="o">
+      <span class="ov" data-out-density>—</span>
+      <span class="ok">px / cm actual</span>
+    </div>
+    <div class="o">
+      <span class="ov" data-out-perm>—</span>
+      <span class="ok">px / m actual</span>
+    </div>
+    <div class="o">
+      <span class="ov" data-out-ideal>—</span>
+      <span class="ok">cm this texture should cover</span>
+    </div>
+  </div>
+
+  <p class="verdict" data-verdict></p>
+
+  <p class="calc-note">
+    Density is <code>resolution ÷ surface size</code>. Everything else — UV
+    packing, trim sheets, whether you can get away with a 1K — is downstream of
+    picking one number and holding the whole set to it. Pick the target from how
+    close the camera gets, not from how important the asset feels.
+  </p>
+</div>
+
+<script>
+  const root = document.querySelector<HTMLElement>('[data-calc]');
+  if (root) {
+    const tex = root.querySelector<HTMLSelectElement>('[data-tex]')!;
+    const size = root.querySelector<HTMLInputElement>('[data-size]')!;
+    const target = root.querySelector<HTMLSelectElement>('[data-target]')!;
+    const outD = root.querySelector<HTMLElement>('[data-out-density]')!;
+    const outM = root.querySelector<HTMLElement>('[data-out-perm]')!;
+    const outI = root.querySelector<HTMLElement>('[data-out-ideal]')!;
+    const verdict = root.querySelector<HTMLElement>('[data-verdict]')!;
+
+    const round = (n: number, p = 2) =>
+      Number.isFinite(n) ? n.toFixed(p).replace(/\.00$/, '') : '—';
+
+    function update() {
+      const res = Number(tex.value);
+      const cm = Number(size.value);
+      const want = Number(target.value);
+      if (!(cm > 0)) {
+        outD.textContent = outM.textContent = outI.textContent = '—';
+        verdict.textContent = '';
+        return;
+      }
+      const density = res / cm;
+      outD.textContent = round(density);
+      outM.textContent = Math.round(density * 100).toLocaleString('en-US');
+      outI.textContent = round(res / want, 1);
+
+      const ratio = density / want;
+      let msg: string;
+      let state: string;
+      if (ratio >= 0.9 && ratio <= 1.1) {
+        msg = 'On target. Hold the rest of the set to this.';
+        state = 'ok';
+      } else if (ratio > 1.1) {
+        const half = Math.round(res / 2);
+        msg =
+          `Over-textured by ${round((ratio - 1) * 100, 0)}%. ` +
+          `A ${half} map would land at ${round(half / cm)} px/cm — check it against the target before you spend the memory.`;
+        state = 'over';
+      } else {
+        const dbl = res * 2;
+        msg =
+          `Under target by ${round((1 - ratio) * 100, 0)}%. ` +
+          `Either go to ${dbl} (${round(dbl / cm)} px/cm), split the surface across more UV space, or accept it because the camera never gets close.`;
+        state = 'under';
+      }
+      verdict.textContent = msg;
+      verdict.dataset.state = state;
+    }
+
+    [tex, size, target].forEach((el) => {
+      el.addEventListener('input', update);
+      el.addEventListener('change', update);
+    });
+    update();
+  }
+</script>
+
+<style>
+  .calc {
+    margin: 2em 0;
+    background: var(--bg-2);
+    border: 1px solid color-mix(in srgb, var(--ac) 30%, transparent);
+    border-radius: var(--r);
+    padding: 18px 22px 16px;
+  }
+  .calc-h {
+    margin: 0 0 14px;
+    font: 600 10.5px/1 var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ac);
+  }
+  .fields { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  @media (max-width: 700px) { .fields { grid-template-columns: 1fr; } }
+  .f { display: flex; flex-direction: column; gap: 5px; }
+  label { font-size: 12.5px; color: var(--tx-3); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 650; }
+  .u { text-transform: none; letter-spacing: 0; font-weight: 400; }
+  select,
+  input {
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--tx);
+    font: 15px var(--sans);
+    padding: 9px 10px;
+    width: 100%;
+  }
+  select:focus-visible,
+  input:focus-visible { outline: 2px solid var(--ac); outline-offset: 1px; }
+
+  .out {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+  }
+  @media (max-width: 700px) { .out { grid-template-columns: 1fr 1fr; } }
+  .o { display: flex; flex-direction: column; }
+  .ov { font-size: 25px; font-weight: 700; letter-spacing: -0.02em; color: var(--ac); font-variant-numeric: tabular-nums; }
+  .ok { font-size: 11.5px; color: var(--tx-3); text-transform: uppercase; letter-spacing: 0.07em; margin-top: 3px; }
+
+  .verdict {
+    margin: 14px 0 0;
+    font-size: 14.5px;
+    line-height: 1.55;
+    padding: 10px 13px;
+    border-radius: 8px;
+    background: var(--bg-3);
+    color: var(--tx-2);
+    border-left: 3px solid var(--line);
+  }
+  .verdict[data-state='ok'] { border-left-color: var(--ok); }
+  .verdict[data-state='over'] { border-left-color: var(--warn); }
+  .verdict[data-state='under'] { border-left-color: var(--ac); }
+
+  .calc-note { margin: 14px 0 0; font-size: 13.5px; color: var(--tx-3); line-height: 1.55; }
+</style>

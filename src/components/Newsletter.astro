@@ -1,0 +1,53 @@
+---
+import { NEWSLETTER_ACTION, NEWSLETTER_PITCH } from '../consts';
+interface Props { compact?: boolean }
+const { compact = false } = Astro.props;
+const isCs = Astro.url.pathname.startsWith('/cs');
+---
+<section class={compact ? 'nl compact' : 'nl'} aria-labelledby="nl-h">
+  <h2 id="nl-h">{isCs ? 'Nový díl, když je co říct' : 'A new part when there is something to say'}</h2>
+  <p class="pitch">{isCs
+    ? 'Jednou za dva až tři týdny, vázané na skutečnou práci. Nikdy týdně.'
+    : NEWSLETTER_PITCH}</p>
+
+  {NEWSLETTER_ACTION ? (
+    <form method="post" action={NEWSLETTER_ACTION} target="_blank" rel="noopener">
+      <label class="sr-only" for="nl-email">Email</label>
+      <input id="nl-email" type="email" name="email" required placeholder="you@studio.com" autocomplete="email" />
+      <button class="btn" type="submit">{isCs ? 'Odebírat' : 'Subscribe'}</button>
+    </form>
+  ) : (
+    <p class="todo">
+      <strong>Setup:</strong> put your beehiiv or Kit form endpoint in
+      <code>src/consts.ts</code> as <code>NEWSLETTER_ACTION</code> and this
+      becomes a real form. beehiiv is free to 2,500 subscribers with a custom
+      domain included.
+    </p>
+  )}
+</section>
+
+<style>
+  .nl {
+    margin: 3em 0 0;
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    padding: 26px 28px;
+  }
+  .nl.compact { padding: 20px 22px; margin-top: 2em; }
+  h2 { margin: 0 0 6px; font-size: 21px; }
+  .nl.compact h2 { font-size: 18px; }
+  .pitch { margin: 0 0 16px; color: var(--tx-2); font-size: 15px; max-width: 56ch; }
+  form { display: flex; gap: 8px; flex-wrap: wrap; }
+  input[type='email'] {
+    flex: 1 1 240px;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--tx);
+    font: 15px var(--sans);
+    padding: 10px 12px;
+  }
+  input[type='email']:focus-visible { outline: 2px solid var(--ac); outline-offset: 1px; }
+  .todo { margin: 0; font-size: 13.5px; color: var(--tx-3); line-height: 1.6; }
+</style>

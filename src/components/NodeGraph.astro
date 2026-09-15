@@ -1,0 +1,119 @@
+---
+/**
+ * NodeGraph — the single most important component on this site.
+ *
+ * Why it exists: Google cannot read your material graph screenshot. Every
+ * shader/material article on the internet is a wall of images with no
+ * indexable text, which is exactly why search results for these topics are
+ * dominated by Udemy pages and forum threads. Listing the node names as real
+ * text underneath the image is how you outrank them.
+ *
+ * It also makes the article genuinely more useful: a reader can copy a node
+ * name and search for it, and someone rebuilding your graph can check their
+ * work against the list without squinting at a JPEG.
+ *
+ * Usage in MDX:
+ *   <NodeGraph
+ *     src="/img/breaking-the-tile-01/macro-variation.webp"
+ *     alt="Material graph blending a macro variation texture over a tiling base"
+ *     caption="The whole macro variation setup. Four nodes."
+ *     nodes={[
+ *       ['TextureSample', 'the tiling base, UV scaled 8x'],
+ *       ['TextureSample', 'macro variation noise, UV scaled 0.25x'],
+ *       ['Multiply', 'base RGB against the noise, then...'],
+ *       ['Lerp', '...blend back toward the original so it never goes muddy'],
+ *     ]}
+ *     engine="Unreal Engine 5.7"
+ *   />
+ */
+interface Props {
+  src: string;
+  alt: string;
+  caption?: string;
+  /** [nodeName, whatItDoesHere] — keep the second part short and specific. */
+  nodes?: [string, string][];
+  engine?: string;
+  /** Link to a downloadable .sbs / .uasset / gist if you have one. */
+  source?: string;
+}
+const { src, alt, caption, nodes = [], engine, source } = Astro.props;
+---
+
+<figure class="nodegraph">
+  <img src={src} alt={alt} loading="lazy" decoding="async" />
+
+  {caption && <figcaption>{caption}</figcaption>}
+
+  {
+    nodes.length > 0 && (
+      <details open>
+        <summary>
+          Nodes in this graph{engine && <span class="eng"> · {engine}</span>}
+        </summary>
+        <ol class="nodelist">
+          {nodes.map(([name, note]) => (
+            <li>
+              <code>{name}</code>
+              {note && <span class="note"> — {note}</span>}
+            </li>
+          ))}
+        </ol>
+        {source && (
+          <p class="src">
+            <a href={source}>Download the source graph</a>
+          </p>
+        )}
+      </details>
+    )
+  }
+</figure>
+
+<style>
+  .nodegraph {
+    margin: 2em 0;
+    padding: 0;
+  }
+  .nodegraph img {
+    width: 100%;
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    background: var(--bg-2);
+  }
+  figcaption {
+    font-size: 14px;
+    color: var(--tx-2);
+    margin-top: 10px;
+    line-height: 1.5;
+  }
+  details {
+    margin-top: 12px;
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px 16px;
+  }
+  summary {
+    cursor: pointer;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    font-weight: 700;
+    color: var(--ac);
+  }
+  summary::marker { color: var(--tx-3); }
+  .eng {
+    color: var(--tx-3);
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+  .nodelist {
+    margin: 12px 0 0;
+    padding-left: 1.3em;
+    font-size: 14.5px;
+  }
+  .nodelist li { margin-bottom: 6px; color: var(--tx-2); }
+  .nodelist code { font-size: 13.5px; color: var(--tx); }
+  .note { color: var(--tx-2); }
+  .src { margin: 10px 0 0; font-size: 14px; }
+</style>

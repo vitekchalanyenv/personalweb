@@ -1,0 +1,290 @@
+# yaml-language-server: $schema=https://unpkg.com/@sveltia/cms/schema/sveltia-cms.json
+#
+# ─────────────────────────────────────────────────────────────────────────────
+#  EDITOR CONFIGURATION
+#
+#  THE ONE LINE YOU MUST CHANGE is `repo:` below — put your GitHub username
+#  in front of the slash. Everything else is already set up.
+#
+#  Two rules that keep this safe, both deliberate:
+#
+#  1. The article body is RAW MODE ONLY. There is no visual editor, and that
+#     is not an oversight. Every WYSIWYG editor available parses the body into
+#     its own model and writes it back out — which silently deletes tags like
+#     <Figure /> and turns <Callout> into visible garbage text. Raw mode is a
+#     plain textarea, so what you type is exactly what lands in the file.
+#
+#  2. Images are converted to WebP and capped at 2048 px before they are
+#     committed. Every image you upload lives in the repository forever, so a
+#     20 MB render uploaded once is 20 MB of permanent weight. This makes that
+#     impossible to do by accident.
+# ─────────────────────────────────────────────────────────────────────────────
+
+backend:
+  name: github
+  repo: vitekchalanyenv/personalweb
+  branch: main
+  # Sign in with a personal access token. This needs no server of your own.
+  # To switch to a one-click "Sign in with GitHub" button later, deploy the
+  # sveltia-cms-auth Worker and add:  base_url: https://<your-worker>.workers.dev
+  # then change this line to:  auth_methods: [oauth, token]
+  auth_methods: [token]
+
+# Where uploaded images go in the repository, and what path gets written into
+# the article. Both are repository-absolute.
+#
+# Deliberately NOT under /img — that folder is cached as immutable for a year,
+# so re-uploading a file under the same name there would keep serving the old
+# one. /uploads gets ordinary caching and can be overwritten safely.
+media_folder: /public/uploads
+public_folder: /uploads
+
+media_libraries:
+  all:
+    transformations:
+      raster_image:
+        format: webp
+        quality: 82
+        width: 2048
+        height: 2048
+      svg:
+        optimize: true
+
+# Belt and braces: even if a body field is ever mis-declared, no visual editor
+# can appear anywhere in this CMS.
+field_defaults:
+  richtext:
+    modes: [raw]
+
+collections:
+  # ───────────────────────────── ARTICLES ─────────────────────────────
+  - name: articles
+    label: Articles
+    label_singular: Article
+    description: >-
+      Numbered episodes in one of the three series. Episode number is what
+      makes it a serial rather than a pile of posts — always set it.
+    folder: src/content/articles
+    extension: mdx
+    format: yaml-frontmatter
+    create: true
+    slug: '{{fields.series}}-{{fields.episode}}-{{slug}}'
+    preview_path: articles/{{slug}}
+    summary: '{{series}} #{{episode}} — {{title}}'
+    sortable_fields: [date, series, episode, title]
+    view_filters:
+      - { label: Drafts, field: draft, pattern: true }
+      - { label: Published, field: draft, pattern: false }
+    fields:
+      - { name: title, label: Title, widget: string }
+      - name: shortTitle
+        label: Short title
+        widget: string
+        required: false
+        hint: For cards and the browser tab. Keep it under about 60 characters.
+      - { name: description, label: Description, widget: text }
+      - name: series
+        label: Series
+        widget: select
+        options:
+          - { label: 'Shipping Kits', value: shipping-kits }
+          - { label: 'Grown, Not Placed', value: grown-not-placed }
+          - { label: 'Breaking the Tile', value: breaking-the-tile }
+      - name: episode
+        label: Episode number
+        widget: number
+        value_type: int
+        min: 1
+        hint: Reading order within the series, not publication order.
+      - name: date
+        label: Published
+        widget: datetime
+        date_format: 'YYYY-MM-DD'
+        time_format: false
+        picker_utc: true
+      - name: updated
+        label: Last updated
+        widget: datetime
+        date_format: 'YYYY-MM-DD'
+        time_format: false
+        picker_utc: true
+        required: false
+        hint: Only fill this in if you revise the article after publishing.
+      - name: cover
+        label: Cover image
+        widget: image
+        required: false
+      - name: coverAlt
+        label: Cover description
+        widget: string
+        required: false
+        hint: What the image shows, for screen readers and search engines.
+      - name: tags
+        label: Tags
+        widget: list
+        required: false
+        default: []
+      - name: versions
+        label: Engine / tool versions
+        widget: list
+        required: false
+        default: []
+        hint: 'e.g. Unreal Engine 5.7. Technical readers care about this more than anything else.'
+      - name: download
+        label: Attached download
+        widget: object
+        required: false
+        collapsed: true
+        hint: Leave both fields empty if there is no download.
+        fields:
+          - { name: label, label: Button text, widget: string, required: false }
+          - { name: href, label: File path, widget: string, required: false }
+          - { name: note, label: Note, widget: string, required: false }
+      - name: draft
+        label: Draft
+        widget: boolean
+        default: true
+        hint: Drafts are saved to the repository but never appear on the live site.
+      - name: lang
+        label: Language
+        widget: select
+        default: en
+        options:
+          - { label: English, value: en }
+          - { label: Čeština, value: cs }
+      - name: translationOf
+        label: Translation of
+        widget: string
+        required: false
+        hint: Slug of the other-language version, so the two link to each other.
+      - name: body
+        label: Article
+        widget: markdown
+        modes: [raw]
+        # Every new article starts from this skeleton, so the component syntax
+        # never has to be remembered. Delete what you do not use.
+        default: |
+          Open with the reader's actual problem in one or two sentences. No
+          throat-clearing, no "in this article we will".
+
+          ## The first real heading
+
+          Body text. **Bold** for the thing that matters, *italic* sparingly,
+          `inline code` for node names, paths and console commands.
+
+          <Callout kind="key">
+          The one sentence you want remembered. Other kinds: warn (this will
+          bite you), wrong (what did not work), note (a plain aside).
+          </Callout>
+
+          <Figure
+            src="/uploads/your-image.webp"
+            alt="Describe what is in the image — this is required."
+            caption="What it shows and why it matters."
+          />
+
+          <SpecTable
+            title="Test scene"
+            rows={[
+              ['Subject', 'What it is'],
+              ['Area', '400 × 400 m'],
+              ['Hardware', 'RTX 3070, 1080p, Epic scalability'],
+            ]}
+          />
+
+          <Numbers
+            label="What was measured, on what hardware"
+            beforeLabel="Before"
+            afterLabel="After"
+            rows={[
+              ['Frame time', '24.1 ms', '16.8 ms', 'better'],
+              ['Draw calls', '4 210', '1 870', 'better'],
+              ['Disk size', '340 MB', '710 MB', 'worse'],
+            ]}
+            note="Say how you measured it. `stat unit`, averaged over 300 frames."
+          />
+
+          <BeforeAfter
+            before="/uploads/before.webp"
+            after="/uploads/after.webp"
+            alt="Describe both states in one sentence."
+            beforeLabel="Before"
+            afterLabel="After"
+            caption="Same asset, one change."
+          />
+
+          <NodeGraph
+            src="/uploads/graph.webp"
+            alt="Describe the graph."
+            caption="What this setup does."
+            engine="Unreal Engine 5.7"
+            nodes={[
+              ['TextureSample', 'what this node is for'],
+              ['Multiply', 'what it is doing and why'],
+            ]}
+          />
+
+          ```hlsl
+          // Code blocks get syntax highlighting. Always name the language.
+          float3 result = lerp(a, b, mask);
+          ```
+
+          ## Close with the number
+
+          End on something measurable — a frame time, a memory figure, a count.
+          That is the part nobody else publishes, and the reason people return.
+
+          Last thing before you publish: the rows in Numbers and SpecTable are
+          real lists in curly braces, so every row needs its square brackets and
+          a comma after it. If the site fails to build, that is almost always
+          where the mistake is.
+
+  # ──────────────────────────── REFERENCE ────────────────────────────
+  - name: reference
+    label: Reference
+    label_singular: Reference page
+    description: >-
+      Structured, durable pages that stay current — the pages people bookmark
+      and search engines send traffic to. Update rather than republish.
+    folder: src/content/reference
+    extension: mdx
+    format: yaml-frontmatter
+    create: true
+    slug: '{{slug}}'
+    preview_path: reference/{{slug}}
+    sortable_fields: [order, title, updated]
+    fields:
+      - { name: title, label: Title, widget: string }
+      - { name: description, label: Description, widget: text }
+      - name: order
+        label: Sort order
+        widget: number
+        value_type: int
+        default: 100
+        hint: Lower numbers appear first in the sidebar.
+      - name: updated
+        label: Last updated
+        widget: datetime
+        date_format: 'YYYY-MM-DD'
+        time_format: false
+        picker_utc: true
+      - name: versions
+        label: Engine / tool versions
+        widget: list
+        required: false
+        default: []
+      - name: draft
+        label: Draft
+        widget: boolean
+        default: true
+      - name: lang
+        label: Language
+        widget: select
+        default: en
+        options:
+          - { label: English, value: en }
+          - { label: Čeština, value: cs }
+      - name: body
+        label: Page
+        widget: markdown
+        modes: [raw]

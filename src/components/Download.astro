@@ -1,0 +1,70 @@
+---
+/**
+ * Download — the email-gated freebie.
+ *
+ * This is the fastest list-growth lever available to you and the one thing
+ * Fab structurally cannot do: Fab keeps the customer, you never get the email.
+ * A free material function or trim sheet on your own domain does.
+ *
+ * Point `action` at your ESP form endpoint (beehiiv / Kit both give you one).
+ * If you leave `action` empty it renders as a plain download link, which is
+ * fine for genuinely ungated files.
+ */
+interface Props {
+  label: string;
+  href: string;
+  note?: string;
+  /** ESP form POST endpoint. Omit for an ungated direct download. */
+  action?: string;
+}
+const { label, href, note, action } = Astro.props;
+---
+
+<div class="dl">
+  <p class="dl-h">Free download</p>
+  <p class="dl-label">{label}</p>
+  {note && <p class="dl-note">{note}</p>}
+
+  {action ? (
+    <form class="dl-form" method="post" action={action} target="_blank" rel="noopener">
+      <label class="sr-only" for={`em-${href}`}>Email address</label>
+      <input id={`em-${href}`} type="email" name="email" required placeholder="you@studio.com" autocomplete="email" />
+      <input type="hidden" name="redirect" value={href} />
+      <button class="btn" type="submit">Send it to me</button>
+    </form>
+    <p class="dl-fine">One email with the file, plus the series when a new part lands. No spam, unsubscribe in one click.</p>
+  ) : (
+    <p><a class="btn" href={href} download>Download</a></p>
+  )}
+</div>
+
+<style>
+  .dl {
+    margin: 2.2em 0;
+    background: var(--bg-2);
+    border: 1px solid color-mix(in srgb, var(--ac) 34%, transparent);
+    border-radius: var(--r);
+    padding: 18px 22px;
+  }
+  .dl-h {
+    margin: 0 0 6px;
+    font: 600 10.5px/1 var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ac);
+  }
+  .dl-label { margin: 0 0 4px; font-size: 17px; font-weight: 650; color: var(--tx); }
+  .dl-note { margin: 0 0 12px; font-size: 14.5px; color: var(--tx-2); }
+  .dl-form { display: flex; gap: 8px; flex-wrap: wrap; margin: 0; }
+  .dl-form input[type='email'] {
+    flex: 1 1 220px;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--tx);
+    font: 15px var(--sans);
+    padding: 10px 12px;
+  }
+  .dl-form input[type='email']:focus-visible { outline: 2px solid var(--ac); outline-offset: 1px; }
+  .dl-fine { margin: 10px 0 0; font-size: 12.5px; color: var(--tx-3); }
+</style>

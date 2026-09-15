@@ -1,0 +1,204 @@
+---
+/**
+ * BeforeAfter — draggable comparison slider.
+ *
+ * The research finding this serves: "what I tried and it didn't work" is the
+ * section almost nobody writes, and it's the one readers remember. It's also
+ * the thing an AI-generated "complete guide" can never produce, because it
+ * requires having actually done the work badly first.
+ *
+ * Implementation note: the reveal is done with `clip-path` on an absolutely
+ * positioned overlay rather than by animating a wrapper's width. Width-based
+ * clipping needs the inner image to stay at full stage width, which means
+ * container queries and a lot of ways to go subtly wrong at different aspect
+ * ratios. clip-path just works.
+ *
+ * Progressive enhancement: with JS or range inputs unavailable you get both
+ * images stacked and labelled, so the article never breaks.
+ *
+ * Usage:
+ *   <BeforeAfter
+ *     before="/img/x/tiling-before.webp"  beforeLabel="Straight 8x tile"
+ *     after="/img/x/tiling-after.webp"    afterLabel="With macro variation"
+ *     alt="Stone wall with and without macro variation breakup"
+ *     caption="Same texture, same lighting. The only change is a 0.25x noise multiply."
+ *   />
+ */
+interface Props {
+  before: string;
+  after: string;
+  alt: string;
+  beforeLabel?: string;
+  afterLabel?: string;
+  caption?: string;
+}
+const {
+  before,
+  after,
+  alt,
+  beforeLabel = 'Before',
+  afterLabel = 'After',
+  caption,
+} = Astro.props;
+
+// Stable id so the label/input association is unique per instance on a page.
+const uid = `ba-${Math.abs(
+  [...`${before}${after}`].reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 7)
+).toString(36)}`;
+---
+
+<figure class="ba">
+  <div class="ba-stage" data-ba>
+    <!-- Sizing image, in flow: establishes the stage aspect ratio. -->
+    <img class="ba-base" src={before} alt={`${alt} — ${beforeLabel}`} loading="lazy" decoding="async" />
+
+    <!-- Reveal overlay, clipped from the right. -->
+    <img class="ba-over" src={after} alt={`${alt} — ${afterLabel}`} loading="lazy" decoding="async" />
+
+    <span class="ba-tag ba-tag-l">{beforeLabel}</span>
+    <span class="ba-tag ba-tag-r">{afterLabel}</span>
+
+    <div class="ba-handle" aria-hidden="true"><span></span></div>
+
+    <label class="sr-only" for={uid}>
+      Compare: {beforeLabel} versus {afterLabel}
+    </label>
+    <input
+      class="ba-range"
+      id={uid}
+      type="range"
+      min="0"
+      max="100"
+      value="50"
+      step="0.5"
+      data-ba-range
+    />
+  </div>
+
+  {caption && <figcaption>{caption}</figcaption>}
+</figure>
+
+<style>
+  .ba { margin: 2em 0; padding: 0; }
+
+  .ba-stage {
+    position: relative;
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    overflow: hidden;
+    background: var(--bg-2);
+    line-height: 0;
+    --pos: 50%;
+  }
+
+  .ba-base { width: 100%; display: block; }
+
+  .ba-over {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    /* Reveal from the left edge up to --pos. */
+    clip-path: inset(0 calc(100% - var(--pos)) 0 0);
+  }
+
+  .ba-tag {
+    position: absolute;
+    bottom: 10px;
+    font: 600 10.5px/1 var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 5px 9px;
+    border-radius: 5px;
+    background: rgba(8, 10, 14, 0.72);
+    color: #fff;
+    backdrop-filter: blur(4px);
+    pointer-events: none;
+  }
+  .ba-tag-l { left: 10px; }
+  .ba-tag-r { right: 10px; }
+
+  .ba-handle {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: var(--pos);
+    width: 2px;
+    background: var(--ac);
+    transform: translateX(-1px);
+    pointer-events: none;
+  }
+  .ba-handle span {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 34px;
+    height: 34px;
+    margin: -17px 0 0 -17px;
+    border-radius: 50%;
+    background: var(--ac);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+  }
+  .ba-handle span::before,
+  .ba-handle span::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 0;
+    height: 0;
+    border: 5px solid transparent;
+    margin-top: -5px;
+  }
+  .ba-handle span::before { left: 4px; border-right-color: var(--ac-ink); }
+  .ba-handle span::after { right: 4px; border-left-color: var(--ac-ink); }
+
+  .ba-range {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    cursor: ew-resize;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .ba-range:focus-visible ~ .ba-handle span {
+    outline: 3px solid #fff;
+    outline-offset: 2px;
+  }
+
+  figcaption {
+    font-size: 14px;
+    color: var(--tx-2);
+    margin-top: 10px;
+    line-height: 1.5;
+  }
+
+  /* No-JS fallback: stack them instead of overlaying. */
+  @media (scripting: none) {
+    .ba-over {
+      position: static;
+      clip-path: none;
+      height: auto;
+      margin-top: 8px;
+    }
+    .ba-handle,
+    .ba-range { display: none; }
+    .ba-tag { position: static; display: inline-block; margin: 8px 8px 0 0; }
+  }
+</style>
+
+<script>
+  // A range input gives keyboard control, touch dragging and screen-reader
+  // semantics for free, which is why this is a range and not a mousemove
+  // handler on the container.
+  document.querySelectorAll<HTMLElement>('[data-ba]').forEach((stage) => {
+    const range = stage.querySelector<HTMLInputElement>('[data-ba-range]');
+    if (!range) return;
+    const apply = () => stage.style.setProperty('--pos', `${range.value}%`);
+    range.addEventListener('input', apply);
+    apply();
+  });
+</script>

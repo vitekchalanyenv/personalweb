@@ -1,0 +1,59 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+
+const pages = (
+  await getCollection('reference', ({ data }) => data.lang === 'en' && (!data.draft || import.meta.env.DEV))
+).sort((a, b) => a.data.order - b.data.order);
+const iso = (d: Date) => d.toISOString().slice(0, 10);
+---
+<Base
+  title="Reference"
+  description="Structured, current reference data for environment artists: texel density, trim sheets, modular grids and foliage budgets. Tables and calculators, not essays."
+>
+  <div class="wrap top">
+    <h1>Reference</h1>
+    <p class="lede">
+      Tables and calculators rather than prose. These pages exist because the
+      best-known resources for some of these topics are currently PDFs on a CDN
+      or forum threads from 2016 — and because a page you can search, bookmark
+      and come back to is worth more than an article you read once.
+    </p>
+  </div>
+
+  <div class="wrap list">
+    {pages.length === 0 && <p class="muted">Nothing published yet.</p>}
+    {pages.map((r) => (
+      <a class="row" href={`/reference/${r.id}/`}>
+        <span class="t">{r.data.title}</span>
+        <span class="d">{r.data.description}</span>
+        <span class="u">updated {iso(r.data.updated)}</span>
+      </a>
+    ))}
+  </div>
+</Base>
+
+<style>
+  .top { padding-block: 44px 8px; }
+  h1 { margin: 0 0 12px; }
+  .lede { max-width: 64ch; color: var(--tx-2); font-size: 18px; margin: 0 0 8px; }
+  .list { padding-block: 24px 10px; display: grid; gap: 10px; }
+  .row {
+    display: grid;
+    grid-template-columns: minmax(180px, 260px) 1fr auto;
+    gap: 18px;
+    align-items: baseline;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--bg-2);
+    padding: 15px 18px;
+    color: var(--tx);
+  }
+  .row:hover { border-color: var(--ac); }
+  .t { font-weight: 650; font-size: 16px; }
+  .d { color: var(--tx-2); font-size: 14.5px; }
+  .u { color: var(--tx-3); font-size: 12.5px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  @media (max-width: 800px) {
+    .row { grid-template-columns: 1fr; gap: 6px; }
+  }
+</style>
