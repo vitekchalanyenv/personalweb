@@ -1,0 +1,29 @@
+{
+  // ───────────────────────────────────────────────────────────────────────
+  //  Why this file exists.
+  //
+  //  The deploy step runs `npx wrangler deploy`. Without a config file,
+  //  wrangler tries to be helpful: it detects Astro, runs `astro add
+  //  cloudflare` on its own, installs the SSR adapter and rebuilds the
+  //  project as a server-rendered Worker — which then crashes in the
+  //  prerender server. The build itself was fine; the auto-configuration
+  //  was what broke it.
+  //
+  //  Declaring the project here stops that guessing. This site is static:
+  //  there is no server code, just files. Wrangler uploads `dist` and that
+  //  is the whole deployment.
+  //
+  //  Do not add an adapter to astro.config.mjs. A static build is the point
+  //  — it is why the site is free to host, fast everywhere, and impossible
+  //  to take down with traffic.
+  // ───────────────────────────────────────────────────────────────────────
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "personalweb",
+  "compatibility_date": "2026-09-15",
+  "assets": {
+    "directory": "./dist",
+    // Serve the real 404 page with a 404 status, rather than treating every
+    // unknown path as the homepage.
+    "not_found_handling": "404-page"
+  }
+}
