@@ -2,10 +2,10 @@ import { defineConfig } from 'astro/config';
 import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
 
-// The live address. Currently the free Cloudflare Pages subdomain.
-// When a custom domain is connected, change this line and rebuild — the
-// sitemap, canonical tags and OG URLs all derive from it.
-export const SITE = 'https://vitchalany.pages.dev';
+// The live address. Everything public derives from this one line — the
+// sitemap, the canonical tags, the RSS feed and the social preview URLs.
+// If the domain ever changes, change it here and rebuild; nowhere else.
+export const SITE = 'https://vitchalany.com';
 
 export default defineConfig({
   site: SITE,
