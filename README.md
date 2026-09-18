@@ -316,3 +316,4 @@ public/
 Site code: do what you like with it. Article text and images: all rights
 reserved, and all of it hand-authored — no generative AI at any stage, including
 reference gathering.
+
