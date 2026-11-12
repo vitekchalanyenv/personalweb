@@ -1,0 +1,109 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+import { TOPICS } from '../../content.config';
+
+const projects = (
+  await getCollection(
+    'projects',
+    ({ data }) => data.lang === 'en' && (!data.draft || import.meta.env.DEV)
+  )
+).sort((a, b) => a.data.order - b.data.order || b.data.year - a.data.year);
+
+const chapters = await getCollection(
+  'chapters',
+  ({ data }) => data.lang === 'en' && (!data.draft || import.meta.env.DEV)
+);
+
+const chaptersOf = (slug: string) =>
+  chapters.filter((c) => c.data.project === slug);
+
+const personal = projects.filter((p) => p.data.kind === 'personal');
+const client = projects.filter((p) => p.data.kind === 'client');
+
+const groups = [
+  ['Personal work', personal],
+  ['Client work', client],
+] as const;
+---
+<Base
+  title="Projects"
+  description="Environment projects with full technical breakdowns — modular kits, tiling materials, foliage, shaders and lighting, each taken apart in depth."
+>
+  <div class="wrap top">
+    <h1>Projects</h1>
+    <p class="lede">
+      The renders live on ArtStation. This is the other half: every project
+      taken apart by discipline — the kit grid, the material graphs, the
+      foliage budget, the light rig — with the numbers attached.
+    </p>
+  </div>
+
+  {groups.map(([label, list]) =>
+    list.length > 0 && (
+      <section class="wrap grp">
+        <h2 class="gh">{label}</h2>
+        <div class="grid">
+          {list.map((p) => {
+            const ch = chaptersOf(p.id);
+            return (
+              <a class="pcard card" href={`/projects/${p.id}/`}>
+                {p.data.cover && (
+                  <span class="cov">
+                    <img src={p.data.cover} alt={p.data.coverAlt ?? ''} loading="lazy" />
+                  </span>
+                )}
+                <span class="body">
+                  <span class="meta">
+                    <span class="yr">{p.data.year}</span>
+                    {p.data.client && <span class="cl">{p.data.client}</span>}
+                    {p.data.engine[0] && <span class="cl">{p.data.engine[0]}</span>}
+                  </span>
+                  <strong class="tt">{p.data.shortTitle ?? p.data.title}</strong>
+                  <span class="desc">{p.data.description}</span>
+                  {ch.length > 0 && (
+                    <span class="chips">
+                      {ch.map((c) => (
+                        <span class="chip">{TOPICS[c.data.topic].title}</span>
+                      ))}
+                    </span>
+                  )}
+                </span>
+              </a>
+            );
+          })}
+        </div>
+      </section>
+    )
+  )}
+</Base>
+
+<style>
+  .top { padding-block: 44px 10px; }
+  h1 { margin: 0 0 12px; }
+  .lede { max-width: 66ch; color: var(--tx-2); font-size: 18px; margin: 0; }
+  .grp { padding-block: 26px 8px; }
+  .gh {
+    font: 600 11px/1 var(--mono); text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--tx-3); margin: 0 0 14px;
+  }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+  .pcard { display: flex; flex-direction: column; padding: 0; overflow: hidden; border-bottom: 0; }
+  .cov { display: block; aspect-ratio: 16 / 9; overflow: hidden; border-bottom: 1px solid var(--line); }
+  .cov img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .35s ease; }
+  .pcard:hover .cov img { transform: scale(1.025); }
+  .body { display: flex; flex-direction: column; gap: 8px; padding: 16px 18px 18px; }
+  .meta { display: flex; gap: 8px; align-items: center; }
+  .yr, .cl {
+    font: 600 10.5px/1 var(--mono); letter-spacing: 0.07em; text-transform: uppercase;
+    color: var(--tx-3);
+  }
+  .yr { color: var(--ac); }
+  .tt { font-size: 19px; letter-spacing: -0.015em; color: var(--tx); }
+  .desc { font-size: 14.5px; color: var(--tx-2); line-height: 1.55; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+  .chip {
+    font: 500 11px/1 var(--mono); color: var(--tx-2);
+    border: 1px solid var(--line); border-radius: 100px; padding: 5px 10px;
+  }
+</style>

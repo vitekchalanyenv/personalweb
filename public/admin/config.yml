@@ -288,3 +288,169 @@ collections:
         label: Page
         widget: markdown
         modes: [raw]
+
+  # ───────────────────────────── PROJECTS ─────────────────────────────
+  - name: projects
+    label: Projects
+    label_singular: Project
+    description: >-
+      Portfolio projects. Each project is a hub page with chapter sub-pages
+      for the deep dives. Renders go to ArtStation; depth goes here.
+    folder: src/content/projects
+    extension: mdx
+    format: yaml-frontmatter
+    create: true
+    slug: '{{slug}}'
+    preview_path: projects/{{slug}}
+    summary: '{{year}} — {{title}}'
+    sortable_fields: [year, title]
+    fields:
+      - { name: title, label: Title, widget: string }
+      - name: shortTitle
+        label: Short title
+        widget: string
+        required: false
+        hint: For cards, breadcrumbs and the browser tab.
+      - { name: description, label: Description, widget: text }
+      - name: kind
+        label: Kind
+        widget: select
+        default: personal
+        options:
+          - { label: Personal work, value: personal }
+          - { label: Client work, value: client }
+      - name: client
+        label: Client
+        widget: string
+        required: false
+        hint: Only for client work. Check what you are allowed to publish first.
+      - name: role
+        label: Your role
+        widget: string
+        required: false
+      - { name: year, label: Year, widget: number, value_type: int }
+      - name: engine
+        label: Engine / tools
+        widget: list
+        required: false
+        default: []
+      - name: cover
+        label: Cover image
+        widget: image
+        required: false
+      - name: coverAlt
+        label: Cover description
+        widget: string
+        required: false
+      - name: gallery
+        label: Stills
+        widget: list
+        required: false
+        collapsed: true
+        hint: A few stills for the hub page. The full gallery belongs on ArtStation.
+        fields:
+          - { name: src, label: Image, widget: image }
+          - { name: alt, label: Alt text, widget: string, required: false, default: '' }
+          - { name: caption, label: Caption, widget: string, required: false }
+      - name: artstation
+        label: ArtStation link
+        widget: string
+        required: false
+      - name: tags
+        label: Tags
+        widget: list
+        required: false
+        default: []
+      - name: order
+        label: Sort order
+        widget: number
+        value_type: int
+        default: 100
+        hint: Lower numbers appear first on the Projects page.
+      - name: draft
+        label: Draft
+        widget: boolean
+        default: true
+      - name: lang
+        label: Language
+        widget: select
+        default: en
+        options:
+          - { label: English, value: en }
+          - { label: Čeština, value: cs }
+      - name: body
+        label: Overview
+        widget: markdown
+        modes: [raw]
+        hint: The hub-page intro. Story and decisions here; detail belongs in chapters.
+
+  # ───────────────────────────── CHAPTERS ─────────────────────────────
+  - name: chapters
+    label: Project chapters
+    label_singular: Chapter
+    description: >-
+      One chapter = one discipline deep-dive inside one project. One chapter
+      per topic per project.
+    folder: src/content/chapters
+    extension: mdx
+    format: yaml-frontmatter
+    create: true
+    slug: '{{fields.project}}--{{fields.topic}}'
+    preview_path: projects/{{fields.project}}/{{fields.topic}}
+    summary: '{{project}} · {{topic}} — {{title}}'
+    fields:
+      - name: project
+        label: Project
+        widget: relation
+        collection: projects
+        value_field: '{{slug}}'
+        search_fields: [title]
+        display_fields: [title]
+      - name: topic
+        label: Topic
+        widget: select
+        options:
+          - { label: Modular kit, value: modular-kit }
+          - { label: Tiling materials, value: tiling-materials }
+          - { label: Foliage, value: foliage }
+          - { label: Shaders, value: shaders }
+          - { label: Lighting, value: lighting }
+          - { label: 'Props & set dressing', value: props }
+          - { label: 'Process & pipeline', value: process }
+      - { name: title, label: Title, widget: string }
+      - { name: description, label: Description, widget: text }
+      - name: cover
+        label: Cover image
+        widget: image
+        required: false
+      - name: coverAlt
+        label: Cover description
+        widget: string
+        required: false
+      - name: versions
+        label: Engine / tool versions
+        widget: list
+        required: false
+        default: []
+      - name: updated
+        label: Last updated
+        widget: datetime
+        date_format: 'YYYY-MM-DD'
+        time_format: false
+        picker_utc: true
+        required: false
+      - name: draft
+        label: Draft
+        widget: boolean
+        default: true
+      - name: lang
+        label: Language
+        widget: select
+        default: en
+        options:
+          - { label: English, value: en }
+          - { label: Čeština, value: cs }
+      - name: body
+        label: Chapter
+        widget: markdown
+        modes: [raw]

@@ -1,0 +1,158 @@
+---
+import Base from '../../../layouts/Base.astro';
+import Newsletter from '../../../components/Newsletter.astro';
+import { getCollection, render } from 'astro:content';
+import { TOPICS, type TopicKey } from '../../../content.config';
+import { mdxComponents } from '../../../components/mdx';
+import { AUTHOR, LINKS } from '../../../consts';
+
+export async function getStaticPaths() {
+  const projects = await getCollection(
+    'projects',
+    ({ data }) => data.lang === 'en' && (!data.draft || import.meta.env.DEV)
+  );
+  const chapters = await getCollection(
+    'chapters',
+    ({ data }) => data.lang === 'en' && (!data.draft || import.meta.env.DEV)
+  );
+  const topicOrder = Object.keys(TOPICS) as TopicKey[];
+
+  return chapters.flatMap((chapter) => {
+    const project = projects.find((p) => p.id === chapter.data.project);
+    if (!project) return []; // chapter pointing at a missing/draft project: skip quietly
+    const siblings = chapters
+      .filter((c) => c.data.project === project.id)
+      .sort((a, b) => topicOrder.indexOf(a.data.topic) - topicOrder.indexOf(b.data.topic));
+    const i = siblings.findIndex((c) => c.id === chapter.id);
+    return [{
+      params: { slug: project.id, topic: chapter.data.topic },
+      props: {
+        chapter,
+        project,
+        prev: i > 0 ? siblings[i - 1] : undefined,
+        next: i < siblings.length - 1 ? siblings[i + 1] : undefined,
+      },
+    }];
+  });
+}
+
+const { chapter, project, prev, next } = Astro.props;
+const { Content } = await render(chapter);
+const d = chapter.data;
+const pd = project.data;
+const topic = TOPICS[d.topic];
+const iso = (dt: Date) => dt.toISOString().slice(0, 10);
+
+const words = chapter.body?.split(/\s+/).length ?? 0;
+const readingTime = Math.max(1, Math.round(words / 180));
+
+const schema = {
+  '@context': 'https://schema.org',
+  '@type': 'TechArticle',
+  headline: d.title,
+  description: d.description,
+  ...(d.updated ? { dateModified: d.updated.toISOString() } : {}),
+  author: { '@type': 'Person', name: AUTHOR, url: LINKS.artstation },
+  publisher: { '@type': 'Person', name: AUTHOR },
+  isPartOf: { '@type': 'CreativeWork', name: pd.title },
+  ...(d.cover ? { image: new URL(d.cover, Astro.site).href } : {}),
+  inLanguage: d.lang ?? 'en',
+};
+---
+<Base
+  title={`${d.title} — ${pd.shortTitle ?? pd.title}`}
+  description={d.description}
+  image={d.cover ?? pd.cover}
+  type="article"
+  schema={schema}
+>
+  <article class="wrap post">
+    <header class="post-head measure">
+      <p class="crumb">
+        <a href="/projects/">Projects</a>
+        <span aria-hidden="true">/</span>
+        <a href={`/projects/${project.id}/`}>{pd.shortTitle ?? pd.title}</a>
+        <span aria-hidden="true">/</span>
+        <span>{topic.title}</span>
+      </p>
+      <p class="kicker">
+        <span class="pill">{topic.title}</span>
+        {d.updated && <span class="upd">updated {iso(d.updated)}</span>}
+        <span class="upd">{readingTime} min read</span>
+      </p>
+      <h1>{d.title}</h1>
+      <p class="standfirst">{d.description}</p>
+      {d.versions.length > 0 && (
+        <p class="versions">
+          <span class="vh">Written against</span>
+          {d.versions.map((v: string) => <code>{v}</code>)}
+        </p>
+      )}
+    </header>
+
+    {d.cover && (
+      <figure class="hero plate">
+        <img src={d.cover} alt={d.coverAlt ?? ''} />
+      </figure>
+    )}
+
+    <div class="prose"><Content components={mdxComponents} /></div>
+
+    <div class="measure">
+      <nav class="chnav card" aria-label="Project chapters">
+        <p class="chh">More from <a href={`/projects/${project.id}/`}>{pd.shortTitle ?? pd.title}</a></p>
+        <div class="pn">
+          {prev ? (
+            <a class="pbtn" href={`/projects/${project.id}/${prev.data.topic}/`}>
+              <span class="pk">← {TOPICS[prev.data.topic].title}</span>
+              <span class="pt">{prev.data.title}</span>
+            </a>
+          ) : <span class="pbtn empty" aria-hidden="true"></span>}
+          {next ? (
+            <a class="pbtn right" href={`/projects/${project.id}/${next.data.topic}/`}>
+              <span class="pk">{TOPICS[next.data.topic].title} →</span>
+              <span class="pt">{next.data.title}</span>
+            </a>
+          ) : <span class="pbtn empty" aria-hidden="true"></span>}
+        </div>
+      </nav>
+      <Newsletter compact />
+    </div>
+  </article>
+</Base>
+
+<style>
+  .post { padding-block: 40px 20px; }
+  .crumb { display: flex; gap: 8px; font-size: 13px; color: var(--tx-3); margin: 0 0 18px; flex-wrap: wrap; }
+  .crumb a { color: var(--tx-2); border-bottom: 0; }
+  .crumb a:hover { color: var(--ac); }
+  .post-head { margin-bottom: 26px; }
+  .kicker { display: flex; gap: 12px; align-items: center; margin: 0 0 14px; flex-wrap: wrap; }
+  .upd { font-size: 12.5px; color: var(--tx-3); font-variant-numeric: tabular-nums; }
+  h1 { margin: 0 0 12px; }
+  .standfirst {
+    font-family: var(--sans); font-style: italic; font-size: 20px;
+    color: var(--tx-2); line-height: 1.5; margin: 0 0 18px;
+  }
+  .versions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 0; }
+  .vh { font: 600 10px/1 var(--mono); text-transform: uppercase; letter-spacing: 0.09em; color: var(--tx-3); }
+  .versions code { font-size: 12.5px; }
+  .hero { margin: 0 0 38px; padding: 0; }
+  .hero img { width: 100%; }
+
+  .chnav { padding: 16px 18px; margin-top: 36px; }
+  .chh { margin: 0 0 12px; font-size: 14px; color: var(--tx-2); }
+  .chh a { color: var(--tx); }
+  .pn { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 620px) { .pn { grid-template-columns: 1fr; } }
+  .pbtn {
+    display: flex; flex-direction: column; gap: 4px;
+    padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px;
+    border-bottom-width: 1px; transition: border-color .18s ease;
+  }
+  .pbtn:hover { border-color: var(--line-2); }
+  .pbtn.right { text-align: right; align-items: flex-end; }
+  .pbtn.empty { border: 0; }
+  .pk { font: 600 10.5px/1 var(--mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--ac); }
+  .pt { font-size: 14.5px; color: var(--tx); }
+</style>

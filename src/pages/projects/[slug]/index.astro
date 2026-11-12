@@ -1,0 +1,152 @@
+---
+import Base from '../../../layouts/Base.astro';
+import { getCollection, render } from 'astro:content';
+import { TOPICS, type TopicKey } from '../../../content.config';
+import { mdxComponents } from '../../../components/mdx';
+import { AUTHOR, LINKS } from '../../../consts';
+
+export async function getStaticPaths() {
+  const projects = await getCollection(
+    'projects',
+    ({ data }) => data.lang === 'en' && (!data.draft || import.meta.env.DEV)
+  );
+  return projects.map((project) => ({ params: { slug: project.id }, props: { project } }));
+}
+
+const { project } = Astro.props;
+const { Content } = await render(project);
+const d = project.data;
+
+const topicOrder = Object.keys(TOPICS) as TopicKey[];
+const chapters = (
+  await getCollection(
+    'chapters',
+    ({ data }) =>
+      data.project === project.id &&
+      data.lang === 'en' &&
+      (!data.draft || import.meta.env.DEV)
+  )
+).sort((a, b) => topicOrder.indexOf(a.data.topic) - topicOrder.indexOf(b.data.topic));
+
+const schema = {
+  '@context': 'https://schema.org',
+  '@type': 'CreativeWork',
+  name: d.title,
+  description: d.description,
+  author: { '@type': 'Person', name: AUTHOR, url: LINKS.artstation },
+  ...(d.cover ? { image: new URL(d.cover, Astro.site).href } : {}),
+  ...(d.tags?.length ? { keywords: d.tags.join(', ') } : {}),
+  inLanguage: d.lang ?? 'en',
+};
+---
+<Base
+  title={d.shortTitle ?? d.title}
+  description={d.description}
+  image={d.cover}
+  schema={schema}
+>
+  <article class="wrap">
+    <header class="head">
+      <p class="crumb">
+        <a href="/projects/">Projects</a>
+        <span aria-hidden="true">/</span>
+        <span>{d.shortTitle ?? d.title}</span>
+      </p>
+      <h1>{d.title}</h1>
+      <p class="standfirst">{d.description}</p>
+
+      <dl class="facts card">
+        <div><dt>Year</dt><dd>{d.year}</dd></div>
+        <div><dt>Type</dt><dd>{d.kind === 'client' ? 'Client work' : 'Personal'}</dd></div>
+        {d.client && <div><dt>Client</dt><dd>{d.client}</dd></div>}
+        {d.role && <div><dt>Role</dt><dd>{d.role}</dd></div>}
+        {d.engine.length > 0 && <div><dt>Engine</dt><dd>{d.engine.join(' · ')}</dd></div>}
+      </dl>
+    </header>
+
+    {d.cover && (
+      <figure class="hero plate">
+        <img src={d.cover} alt={d.coverAlt ?? ''} />
+      </figure>
+    )}
+
+    <div class="prose"><Content components={mdxComponents} /></div>
+
+    {chapters.length > 0 && (
+      <section class="chapters">
+        <h2 class="sh">Deep dives</h2>
+        <p class="shsub">
+          One chapter per discipline. The light version of this breakdown is on
+          ArtStation — these go into the detail.
+        </p>
+        <div class="chgrid">
+          {chapters.map((c) => (
+            <a class="chcard card" href={`/projects/${project.id}/${c.data.topic}/`}>
+              <span class="topic">{TOPICS[c.data.topic].title}</span>
+              <strong>{c.data.title}</strong>
+              <span class="cd">{c.data.description}</span>
+              <span class="go" aria-hidden="true">Read the chapter →</span>
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
+
+    {d.gallery.length > 0 && (
+      <section class="gal">
+        <h2 class="sh">Stills</h2>
+        <div class="ggrid">
+          {d.gallery.map((g) => (
+            <figure class="gitem">
+              <img src={g.src} alt={g.alt} loading="lazy" />
+              {g.caption && <figcaption>{g.caption}</figcaption>}
+            </figure>
+          ))}
+        </div>
+      </section>
+    )}
+
+    {d.artstation && (
+      <p class="as">
+        <a class="btn" href={d.artstation}>Full gallery on ArtStation ↗</a>
+      </p>
+    )}
+  </article>
+</Base>
+
+<style>
+  article { padding-block: 40px 70px; }
+  .crumb { display: flex; gap: 8px; font-size: 13px; color: var(--tx-3); margin: 0 0 16px; }
+  .crumb a { color: var(--tx-2); border-bottom: 0; }
+  .crumb a:hover { color: var(--ac); }
+  h1 { margin: 0 0 12px; max-width: 24ch; }
+  .standfirst {
+    font-size: 19px; color: var(--tx-2); line-height: 1.55;
+    max-width: 62ch; margin: 0 0 24px;
+  }
+  .facts { display: flex; flex-wrap: wrap; gap: 26px; padding: 16px 20px; margin: 0 0 30px; }
+  dt { font: 600 10px/1 var(--mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--tx-3); margin-bottom: 5px; }
+  dd { margin: 0; font-size: 15.5px; font-weight: 600; color: var(--tx); }
+  .hero { margin: 0 0 34px; padding: 0; }
+  .hero img { width: 100%; }
+  .prose { margin-bottom: 44px; }
+
+  .sh { margin: 0 0 6px; font-size: 24px; letter-spacing: -0.02em; }
+  .shsub { color: var(--tx-2); font-size: 15px; margin: 0 0 18px; max-width: 64ch; }
+  .chapters { margin-bottom: 48px; }
+  .chgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+  .chcard { display: flex; flex-direction: column; gap: 8px; padding: 18px 20px; border-bottom: 0; }
+  .topic { font: 600 10.5px/1 var(--mono); text-transform: uppercase; letter-spacing: 0.09em; color: var(--ac); }
+  .chcard strong { font-size: 17.5px; letter-spacing: -0.01em; color: var(--tx); }
+  .cd { font-size: 14px; color: var(--tx-2); line-height: 1.55; }
+  .go { font-size: 13.5px; color: var(--tx-3); margin-top: auto; padding-top: 6px; }
+  .chcard:hover .go { color: var(--ac); }
+
+  .gal { margin-bottom: 40px; }
+  .ggrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+  .gitem { margin: 0; }
+  .gitem img { width: 100%; border: 1px solid var(--line); border-radius: var(--r); background: var(--bg-2); }
+  .gitem figcaption { font-size: 12.5px; color: var(--tx-3); margin-top: 6px; }
+  .as { margin: 0; }
+  .as a { border-bottom: 0; }
+</style>

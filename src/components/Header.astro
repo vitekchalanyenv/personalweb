@@ -4,8 +4,8 @@ const path = Astro.url.pathname;
 const isCs = path.startsWith('/cs');
 const base = isCs ? '/cs' : '';
 const nav = isCs
-  ? [['Články', `${base}/articles/`], ['Reference', `${base}/reference/`], ['Kity', `${base}/kits/`], ['Demo', `${base}/demo/`]]
-  : [['Articles', '/articles/'], ['Reference', '/reference/'], ['Kits', '/kits/'], ['Demo', '/demo/']];
+  ? [['Projekty', `${base}/projects/`], ['Články', `${base}/articles/`], ['Reference', `${base}/reference/`], ['Kity', `${base}/kits/`], ['Demo', `${base}/demo/`]]
+  : [['Projects', '/projects/'], ['Articles', '/articles/'], ['Reference', '/reference/'], ['Kits', '/kits/'], ['Demo', '/demo/']];
 const on = (href: string) => path === href || (href !== `${base}/` && path.startsWith(href));
 ---
 <header class="hd">

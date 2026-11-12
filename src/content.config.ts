@@ -53,6 +53,102 @@ const optionalText = () =>
     .optional()
     .transform((v) => (v && v.trim() ? v : undefined));
 
+
+/**
+ * The fixed vocabulary of project deep-dive chapters. ArtStation gets the
+ * renders and a light breakdown; the site gets the depth — one chapter per
+ * discipline. A chapter page only exists when there is something real to say,
+ * so a project with two chapters is fine.
+ */
+export const TOPICS = {
+  'modular-kit': {
+    title: 'Modular kit',
+    blurb: 'Grid, trims, mesh inventory, and how the pieces combine.',
+  },
+  'tiling-materials': {
+    title: 'Tiling materials',
+    blurb: 'Substance graphs, breakup strategy, texel density decisions.',
+  },
+  'foliage': {
+    title: 'Foliage',
+    blurb: 'SpeedTree, scatter rules, wind, and the frame budget.',
+  },
+  'shaders': {
+    title: 'Shaders',
+    blurb: 'Master materials, blending, vertex paint, the expensive bits.',
+  },
+  'lighting': {
+    title: 'Lighting',
+    blurb: 'Light rig, Lumen settings, mood passes and exposure.',
+  },
+  'props': {
+    title: 'Props & set dressing',
+    blurb: 'Hero assets, clutter passes, storytelling placement.',
+  },
+  'process': {
+    title: 'Process & pipeline',
+    blurb: 'Blockout to final: refs, tools, iteration, what changed and why.',
+  },
+} as const;
+
+export type TopicKey = keyof typeof TOPICS;
+
+const topicKeys = Object.keys(TOPICS) as [TopicKey, ...TopicKey[]];
+
+/**
+ * Projects are the portfolio spine of the site. Each project is a hub page
+ * (overview + gallery + facts) with chapter sub-pages for the deep dives.
+ */
+const projects = defineCollection({
+  loader: glob({ pattern: '**/*.mdx', base: './src/content/projects' }),
+  schema: z.object({
+    title: z.string(),
+    shortTitle: optionalText(),
+    description: z.string(),
+    kind: z.enum(['personal', 'client']).default('personal'),
+    client: optionalText(),
+    role: optionalText(),
+    year: z.coerce.number().int(),
+    engine: z.array(z.string()).default([]),
+    cover: optionalText(),
+    coverAlt: optionalText(),
+    gallery: z
+      .array(
+        z.object({
+          src: z.string(),
+          alt: z.string().default(''),
+          caption: optionalText(),
+        })
+      )
+      .default([]),
+    artstation: optionalText(),
+    tags: z.array(z.string()).default([]),
+    order: z.number().int().default(100),
+    draft: z.boolean().default(false),
+    lang: z.enum(['en', 'cs']).default('en'),
+  }),
+});
+
+/**
+ * One chapter = one discipline deep-dive inside one project.
+ * One chapter per (project, topic) pair.
+ */
+const chapters = defineCollection({
+  loader: glob({ pattern: '**/*.mdx', base: './src/content/chapters' }),
+  schema: z.object({
+    project: z.string(),
+    topic: z.enum(topicKeys),
+    title: z.string(),
+    description: z.string(),
+    cover: optionalText(),
+    coverAlt: optionalText(),
+    versions: z.array(z.string()).default([]),
+    updated: blankToUndefined(z.coerce.date().optional()),
+    draft: z.boolean().default(false),
+    lang: z.enum(['en', 'cs']).default('en'),
+  }),
+});
+
 const articles = defineCollection({
   loader: glob({ pattern: '**/*.mdx', base: './src/content/articles' }),
   schema: z.object({
@@ -117,4 +213,4 @@ const reference = defineCollection({
   }),
 });
 
-export const collections = { articles, reference };
+export const collections = { articles, reference, projects, chapters };
